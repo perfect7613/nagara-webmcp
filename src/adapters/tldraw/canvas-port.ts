@@ -1,5 +1,6 @@
 import { AssetRecordType, b64Vecs, createShapeId, toRichText } from "@tldraw/tlschema";
 import {
+  Box,
   type Editor,
   type TLImageShape,
   type TLShapeId,
@@ -19,6 +20,10 @@ export function createTldrawCanvasPort(getEditor: () => Editor | null): CanvasPo
       const shapeIds: string[] = [];
       const viewport = editor.getViewportPageBounds();
       drafts.forEach((draft, index) => {
+        const beside = resolveBeside(editor, draft);
+        const besideBounds = beside ? editor.getShapePageBounds(beside.id) : undefined;
+        const size = displaySize(draft, besideBounds, viewport);
+        const point = placementPoint(editor, draft, index, size, besideBounds, viewport);
         const assetId = AssetRecordType.createId();
         editor.createAssets([
           {
@@ -37,17 +42,16 @@ export function createTldrawCanvasPort(getEditor: () => Editor | null): CanvasPo
           },
         ]);
         const shapeId = createShapeId();
-        const scale = Math.min(1, 360 / Math.max(draft.width, draft.height));
         editor.createShape<TLImageShape>({
           id: shapeId,
           type: "image",
-          x: viewport.x + 80 + index * 40,
-          y: viewport.y + 80 + index * 28,
+          x: point.x,
+          y: point.y,
           opacity: draft.ghost ? 0.45 : 1,
           props: {
             assetId,
-            w: draft.width * scale,
-            h: draft.height * scale,
+            w: size.w,
+            h: size.h,
             playing: true,
             url: "",
             crop: null,
@@ -130,6 +134,12 @@ export function createTldrawCanvasPort(getEditor: () => Editor | null): CanvasPo
           },
         },
       ]);
+      editor.updateShape({
+        id: image.id,
+        type: "image",
+        opacity: 1,
+        meta: { ...image.meta, ghost: false },
+      });
     },
     markUndo(label: string) {
       const editor = getEditor();
@@ -140,13 +150,112 @@ export function createTldrawCanvasPort(getEditor: () => Editor | null): CanvasPo
       const bounds = editor.getShapePageBounds(shapeId as TLShapeId);
       if (bounds) editor.zoomToBounds(bounds, { inset: 80 });
     },
+    lookAtShapes(shapeIds: string[]) {
+      const editor = must(getEditor());
+      const boxes = shapeIds
+        .map((id) => editor.getShapePageBounds(id as TLShapeId))
+        .filter((box): box is Box => Boolean(box));
+      if (boxes.length === 0) return;
+      editor.zoomToBounds(boxes.length === 1 ? boxes[0] : Box.Common(boxes), { inset: 72 });
+    },
     selectShapes(shapeIds: string[]) {
       must(getEditor()).setSelectedShapes(shapeIds as TLShapeId[]);
+    },
+    undo() {
+      must(getEditor()).undo();
+    },
+    redo() {
+      must(getEditor()).redo();
+    },
+    canUndo() {
+      const editor = getEditor();
+      return editor?.getCanUndo() ?? false;
+    },
+    canRedo() {
+      const editor = getEditor();
+      return editor?.getCanRedo() ?? false;
+    },
+    zoomIn() {
+      const editor = must(getEditor());
+      editor.zoomIn(editor.getViewportScreenCenter(), { animation: { duration: 160 } });
+    },
+    zoomOut() {
+      const editor = must(getEditor());
+      editor.zoomOut(editor.getViewportScreenCenter(), { animation: { duration: 160 } });
+    },
+    zoomToFit() {
+      must(getEditor()).zoomToFit({ animation: { duration: 200 } });
+    },
+    resetZoom() {
+      const editor = must(getEditor());
+      editor.resetZoom(editor.getViewportScreenCenter(), { animation: { duration: 160 } });
+    },
+    getZoomLevel() {
+      return getEditor()?.getZoomLevel() ?? 1;
+    },
+    duplicateSelected() {
+      const editor = must(getEditor());
+      const selected = editor.getSelectedShapeIds();
+      if (selected.length === 0) return [];
+      editor.duplicateShapes(selected, { x: 36, y: 36 });
+      return editor.getSelectedShapeIds().map(String);
+    },
+    deleteSelected() {
+      const editor = must(getEditor());
+      const selected = editor.getSelectedShapeIds();
+      if (selected.length === 0) return;
+      editor.deleteShapes(selected);
+    },
+    bringToFront(shapeIds) {
+      const editor = must(getEditor());
+      editor.bringToFront(idsOrSelected(editor, shapeIds));
+    },
+    sendToBack(shapeIds) {
+      const editor = must(getEditor());
+      editor.sendToBack(idsOrSelected(editor, shapeIds));
+    },
+    bringForward(shapeIds) {
+      const editor = must(getEditor());
+      editor.bringForward(idsOrSelected(editor, shapeIds));
+    },
+    sendBackward(shapeIds) {
+      const editor = must(getEditor());
+      editor.sendBackward(idsOrSelected(editor, shapeIds));
+    },
+    stampImageMeta(shapeId, meta) {
+      const editor = must(getEditor());
+      const shape = editor.getShape(shapeId as TLShapeId);
+      if (!shape) return;
+      editor.updateShape({
+        id: shape.id,
+        type: shape.type,
+        meta: { ...shape.meta, ...meta },
+      });
+      if (shape.type !== "image") return;
+      const image = shape as TLImageShape;
+      if (!image.props.assetId) return;
+      const asset = editor.getAsset(image.props.assetId);
+      if (!asset) return;
+      editor.updateAssets([
+        {
+          ...asset,
+          meta: { ...asset.meta, ...meta },
+        },
+      ]);
     },
     async exportFrame() {
       const editor = getEditor();
       if (!editor) return null;
       const shapeIds = [...editor.getCurrentPageShapeIds()];
+      if (shapeIds.length === 0) return null;
+      const result = await editor.toImage(shapeIds, { format: "png", background: true });
+      const href = URL.createObjectURL(result.blob);
+      return { type: "image/png", href };
+    },
+    async exportSelection() {
+      const editor = getEditor();
+      if (!editor) return null;
+      const shapeIds = editor.getSelectedShapeIds();
       if (shapeIds.length === 0) return null;
       const result = await editor.toImage(shapeIds, { format: "png", background: true });
       const href = URL.createObjectURL(result.blob);
@@ -184,11 +293,15 @@ export function readCanvasView(editor: Editor | null): CanvasView {
     if (shape.type === "image") {
       const image = shape as TLImageShape;
       const asset = image.props.assetId ? editor.getAsset(image.props.assetId) : null;
+      const metaPlacement = shape.meta.placementId
+        ? String(shape.meta.placementId)
+        : "";
       images.push({
-        placementId: String(shape.meta.placementId ?? shape.id),
-        assetId: String(shape.meta.assetId ?? ""),
-        versionId: String(shape.meta.versionId ?? ""),
+        placementId: metaPlacement,
+        assetId: shape.meta.assetId ? String(shape.meta.assetId) : "",
+        versionId: shape.meta.versionId ? String(shape.meta.versionId) : "",
         shapeId: String(shape.id),
+        src: asset && asset.type === "image" ? asset.props.src ?? "" : "",
         pageTransform: affine,
         width: image.props.w,
         height: image.props.h,
@@ -257,6 +370,69 @@ function textOf(shape: { type: string; props: Record<string, unknown> }): string
     rich?.content?.flatMap((block) => block.content?.map((node) => node.text ?? "") ?? []) ?? [];
   const text = pieces.join(" ").trim();
   return text || undefined;
+}
+
+function resolveBeside(editor: Editor, draft: PlacementDraft) {
+  if (draft.besideShapeId) {
+    const named = editor.getShape(draft.besideShapeId as TLShapeId);
+    if (named) return named;
+  }
+  const selected = editor.getSelectedShapes().find((shape) => shape.type === "image");
+  if (selected) return selected;
+  return (
+    editor.getCurrentPageShapes().find(
+      (shape) => shape.type === "image" && shape.meta.ghost !== true,
+    ) ?? null
+  );
+}
+
+function displaySize(
+  draft: PlacementDraft,
+  besideBounds: Box | undefined,
+  viewport: Box,
+) {
+  if (besideBounds && besideBounds.h > 8) {
+    const scale = besideBounds.h / Math.max(draft.height, 1);
+    return { w: Math.max(8, draft.width * scale), h: besideBounds.h };
+  }
+  const maxSide = Math.min(Math.max(viewport.w, 320) * 0.52, 860);
+  const scale = Math.min(1, maxSide / Math.max(draft.width, draft.height, 1));
+  return { w: draft.width * scale, h: draft.height * scale };
+}
+
+function placementPoint(
+  editor: Editor,
+  _draft: PlacementDraft,
+  index: number,
+  size: { w: number; h: number },
+  besideBounds: Box | undefined,
+  viewport: Box,
+) {
+  if (besideBounds) {
+    let x = besideBounds.maxX + 32;
+    const siblings = editor
+      .getCurrentPageShapes()
+      .filter((shape) => shape.type === "image")
+      .map((shape) => editor.getShapePageBounds(shape.id))
+      .filter((box): box is Box => Boolean(box))
+      .filter(
+        (box) => box.x >= besideBounds.maxX - 4 && Math.abs(box.y - besideBounds.y) < 48,
+      )
+      .sort((a, b) => a.x - b.x);
+    for (const box of siblings) {
+      if (box.x < x + 8) x = box.maxX + 32;
+    }
+    return { x: x + index * (size.w + 24), y: besideBounds.y };
+  }
+  return {
+    x: viewport.midX - size.w / 2 + index * 36,
+    y: viewport.midY - size.h / 2 + index * 24,
+  };
+}
+
+function idsOrSelected(editor: Editor, shapeIds?: string[]) {
+  if (shapeIds && shapeIds.length > 0) return shapeIds as TLShapeId[];
+  return editor.getSelectedShapeIds();
 }
 
 function mimeFromSrc(src: string): string {

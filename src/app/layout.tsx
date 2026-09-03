@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { NextSSRPlugin } from "@uploadthing/react/next-ssr-plugin";
 import { extractRouterConfig } from "uploadthing/server";
 import { ourFileRouter } from "@/adapters/uploadthing/core";
+import { AbortQuiet } from "@/ui/abort-quiet";
 import { PRODUCT_NAME, PRODUCT_PROMISE } from "@/domain/product";
 import "./globals.css";
 
@@ -38,6 +39,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         {process.env.UPLOADTHING_TOKEN ? (
           <NextSSRPlugin routerConfig={extractRouterConfig(ourFileRouter)} />
         ) : null}
+        <AbortQuiet />
         {children}
       </body>
     </html>

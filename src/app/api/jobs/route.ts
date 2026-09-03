@@ -71,7 +71,7 @@ async function fetchAllowed(url: string, request: Request): Promise<Uint8Array> 
     if (!res.ok) throw new Error("Could not read source image.");
     return new Uint8Array(await res.arrayBuffer());
   }
-  const allowed = /uploadthing\.com|utfs\.io|ufs\.sh$/i.test(new URL(url).host);
+  const allowed = /uploadthing\.com|utfs\.io|ufs\.sh/i.test(new URL(url).host);
   if (!allowed) throw new Error("Source URL is not an allowed blob host.");
   const res = await fetch(url);
   if (!res.ok) throw new Error("Could not fetch source image.");

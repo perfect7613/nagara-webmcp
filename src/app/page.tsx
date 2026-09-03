@@ -1,5 +1,5 @@
-import WorkspaceApp from "@/ui/workspace-app";
+import { Hero } from "@/components/hero";
 
 export default function Home() {
-  return <WorkspaceApp />;
+  return <Hero />;
 }

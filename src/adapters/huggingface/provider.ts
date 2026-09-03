@@ -67,7 +67,7 @@ export function createHuggingFaceProvider(): ImageProvider {
           inputs: blob,
           parameters: {
             prompt: input.instruction,
-            strength: input.strength ?? 0.55,
+            strength: input.strength ?? 0.8,
           },
         });
         const bytes = new Uint8Array(await result.arrayBuffer());

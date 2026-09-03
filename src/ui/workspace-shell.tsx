@@ -1,81 +1,177 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type DragEvent } from "react";
 import { Tldraw, type Editor, type TLComponents, type TLUiOverrides } from "tldraw";
-import "tldraw/tldraw.css";
+import { Image as ImageIcon } from "lucide-react";
+import { SidebarProvider } from "@/components/ui/sidebar";
 import { WebMcpBridge } from "@/adapters/webmcp/bridge";
-import { readCanvasView } from "@/adapters/tldraw/canvas-port";
 import { PRODUCT_NAME, PRODUCT_TAGLINE } from "@/domain/product";
 import { resolveSpatialIntent } from "@/modules/spatial-intent";
 import { AgentDock } from "@/ui/agent-dock";
+import { CanvasActions } from "@/ui/canvas-actions";
 import { PhotoTray } from "@/ui/photo-tray";
+import { PromptBar } from "@/ui/prompt-bar";
 import { TopBar } from "@/ui/top-bar";
+import { useCanvasView } from "@/ui/use-canvas-view";
+import { useIngestPhotos } from "@/ui/use-ingest-photos";
 import { VariantRail } from "@/ui/variant-rail";
-import { useWorkspace } from "@/ui/workspace-provider";
+import {
+  clearWorkspaceCatalog,
+  loadDemoCatalog,
+  useWorkspace,
+} from "@/ui/workspace-provider";
+
+const TLDRAW_COMPONENTS: TLComponents = {
+  SharePanel: null,
+  MenuPanel: null,
+  HelpMenu: null,
+  Minimap: null,
+  TopPanel: null,
+  PageMenu: null,
+  MainMenu: null,
+};
+
+const TLDRAW_OVERRIDES: TLUiOverrides = {
+  tools: (_editor, tools) => tools,
+};
 
 export function WorkspaceShell() {
   const { catalog, commands, setEditor, editor } = useWorkspace();
+  const { ingestFiles } = useIngestPhotos();
   const [webmcpReady, setWebmcpReady] = useState(false);
+  const [trayOpen, setTrayOpen] = useState(true);
+  const [dockOpen, setDockOpen] = useState(false);
+  const [graphOpen, setGraphOpen] = useState(false);
+  const [canvasReady, setCanvasReady] = useState(false);
+  const hostRef = useRef<HTMLElement>(null);
+  const canvasView = useCanvasView(editor);
+  const pageHasImages =
+    canvasView.images.length > 0 ||
+    catalog.placements.length > 0 ||
+    (editor
+      ? editor.getCurrentPageShapes().some((shape) => shape.type === "image")
+      : false);
+
+  useEffect(() => {
+    if (window.matchMedia("(max-width: 767px)").matches) {
+      setTrayOpen(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    const node = hostRef.current;
+    if (!node) return;
+    const measure = () => {
+      const box = node.getBoundingClientRect();
+      if (box.width > 32 && box.height > 32) setCanvasReady(true);
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    commands.syncCanvas(canvasView);
+  }, [commands, canvasView]);
 
   const spatialIntent = useMemo(
-    () => resolveSpatialIntent(readCanvasView(editor)),
-    [editor, catalog.updatedAt, catalog.selection],
+    () => resolveSpatialIntent(canvasView),
+    [canvasView],
   );
-
-  const components: TLComponents = {
-    SharePanel: null,
-    MenuPanel: null,
-    NavigationPanel: null,
-  };
-
-  const overrides: TLUiOverrides = {
-    tools: (editor, tools) => tools,
-  };
 
   return (
-    <div className="workspace">
-      <TopBar
-        name={catalog.name}
-        webmcpReady={webmcpReady}
-        onExport={async () => {
-          const file = await createTldrawCanvasPortSafe(editor);
-          if (!file) return;
-          const a = document.createElement("a");
-          a.href = file.href;
-          a.download = `${catalog.name.replace(/\s+/g, "-").toLowerCase()}.png`;
-          a.click();
-        }}
-        onReset={() => {
-          localStorage.removeItem("keepers.catalog.v1");
-          window.location.reload();
-        }}
-      />
-      <div className="workspace-body">
-        <PhotoTray />
-        <section className="light-table" aria-label="Shared canvas">
-          <Tldraw
-            persistenceKey="keepers-canvas"
-            components={components}
-            overrides={overrides}
-            onMount={(next: Editor) => {
-              setEditor(next);
-              next.user.updateUserPreferences({ colorScheme: "light" });
-              const supported = typeof document.modelContext?.registerTool === "function";
-              setWebmcpReady(supported);
-            }}
-          />
+    <SidebarProvider open={trayOpen} setOpen={setTrayOpen} animate={false}>
+      <div className="workspace is-kanvas">
+        <section
+          ref={hostRef}
+          className="light-table keepers-canvas"
+          aria-label="Shared canvas"
+          onDragOverCapture={handleDragOver}
+          onDropCapture={handleDrop}
+        >
+          {!pageHasImages ? (
+            <div className="light-table-hint">
+              <span className="icon-well large">
+                <ImageIcon className="h-5 w-5" />
+              </span>
+              <p>The table is infinite.</p>
+              <p className="muted">
+                Place a photo, then draw or type an edit in the bar below.
+              </p>
+            </div>
+          ) : null}
+          {canvasReady ? (
+            <Tldraw
+              persistenceKey={`keepers-board-${catalog.workspaceId}`}
+              autoFocus={false}
+              components={TLDRAW_COMPONENTS}
+              overrides={TLDRAW_OVERRIDES}
+              onMount={(next: Editor) => {
+                setEditor(next);
+                next.user.updateUserPreferences({ colorScheme: "light" });
+                const supported =
+                  typeof document.modelContext?.registerTool === "function";
+                setWebmcpReady(supported);
+              }}
+            />
+          ) : null}
         </section>
-        <AgentDock spatialIntent={spatialIntent} />
+        <div className="float-layer">
+          <TopBar
+            name={catalog.name}
+            webmcpReady={webmcpReady}
+            dockOpen={dockOpen}
+            onToggleDock={() => setDockOpen((value) => !value)}
+            onExport={async () => {
+              const file = await createTldrawCanvasPortSafe(editor);
+              if (!file) return;
+              const a = document.createElement("a");
+              a.href = file.href;
+              a.download = `${catalog.name.replace(/\s+/g, "-").toLowerCase()}.png`;
+              a.click();
+            }}
+            onLoadDemo={loadDemoCatalog}
+            onClear={clearWorkspaceCatalog}
+          />
+          {trayOpen ? <PhotoTray /> : null}
+          {dockOpen ? <AgentDock spatialIntent={spatialIntent} /> : null}
+          {graphOpen ? <VariantRail /> : null}
+          <CanvasActions spatialIntent={spatialIntent} />
+          <PromptBar
+            spatialIntent={spatialIntent}
+            graphOpen={graphOpen}
+            onToggleGraph={() => setGraphOpen((value) => !value)}
+          />
+        </div>
+        <WebMcpBridge
+          commands={commands}
+          catalog={catalog}
+          spatialIntent={spatialIntent}
+          canvasView={canvasView}
+        />
+        <p className="sr-only">
+          {PRODUCT_NAME}. {PRODUCT_TAGLINE}
+        </p>
       </div>
-      <VariantRail />
-      <WebMcpBridge
-        commands={commands}
-        catalog={catalog}
-        spatialIntent={spatialIntent}
-      />
-      <p className="sr-only">{PRODUCT_NAME}. {PRODUCT_TAGLINE}</p>
-    </div>
+    </SidebarProvider>
   );
+
+  function handleDragOver(event: DragEvent) {
+    if (![...event.dataTransfer.types].includes("Files")) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "copy";
+  }
+
+  function handleDrop(event: DragEvent) {
+    const files = [...event.dataTransfer.files].filter((file) =>
+      file.type.startsWith("image/"),
+    );
+    if (files.length === 0) return;
+    event.preventDefault();
+    event.stopPropagation();
+    void ingestFiles(files, true);
+  }
 }
 
 async function createTldrawCanvasPortSafe(editor: Editor | null) {

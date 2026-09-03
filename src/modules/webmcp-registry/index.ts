@@ -1,5 +1,5 @@
 import type { Catalog, CommandResult, WorkspaceSnapshot } from "@/domain/types";
-import type { SpatialIntent } from "@/modules/spatial-intent";
+import type { CanvasView, SpatialIntent } from "@/modules/spatial-intent";
 import type { LayoutKind, WorkspaceCommands } from "@/modules/workspace-command";
 
 export type ToolAvailability =
@@ -25,7 +25,7 @@ export const TOOL_CATALOG: ToolDescriptor[] = [
   {
     name: "get_workspace_state",
     description:
-      "Read the current Keepers workspace: photo groups, selection, preference profile, canvas placements, and open jobs. Use this before acting.",
+      "Read the current Keepers workspace: photos, groups, selection, preference profile, canvas placements, jobs, and the resolved spatial intent. Call this before acting.",
     availability: "always",
     annotations: { readOnlyHint: true },
     inputSchema: { type: "object", properties: {}, additionalProperties: false },
@@ -145,7 +145,7 @@ export const TOOL_CATALOG: ToolDescriptor[] = [
     name: "apply_preferences",
     description:
       "Apply the learned preference profile to unresolved groups. High-confidence groups are resolved; uncertain groups stay for the human. Never deletes photos.",
-    availability: "when_group_open",
+    availability: "always",
     inputSchema: {
       type: "object",
       properties: {
@@ -182,10 +182,38 @@ export const TOOL_CATALOG: ToolDescriptor[] = [
   {
     name: "get_spatial_intent",
     description:
-      "Resolve the human's current drawings, selection, and notes into semantic intent: which photo, which region, and any frame instructions. Use this before edit_image. Does not return raw canvas JSON or pixels.",
+      "Resolve the human's current drawings, selection, and notes into semantic intent: which photo, which region, and any readable text on the canvas. Pencil handwriting is not OCR'd — typed text, sticky notes, and arrow labels are. Use this before edit_image.",
     availability: "always",
     annotations: { readOnlyHint: true },
     inputSchema: { type: "object", properties: {}, additionalProperties: false },
+  },
+  {
+    name: "get_canvas_state",
+    description:
+      "Read what is on the light table: placed photos, drawings, arrows, typed text, sticky notes, and the viewport. No raw pixels. Use this to understand pointing before edit_image.",
+    availability: "always",
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: "object", properties: {}, additionalProperties: false },
+  },
+  {
+    name: "grant_consent",
+    description:
+      "Record that the human allowed sending photos to Hugging Face (Qwen) for pixel edits. Required before generate_image.",
+    availability: "always",
+    inputSchema: { type: "object", properties: {}, additionalProperties: false },
+  },
+  {
+    name: "set_selection",
+    description: "Set the tray selection to specific photos, optionally opening a group.",
+    availability: "always",
+    inputSchema: {
+      type: "object",
+      properties: {
+        assetIds: { type: "array", items: { type: "string" } },
+        groupId: { type: "string" },
+      },
+      additionalProperties: false,
+    },
   },
   {
     name: "place_photos",
@@ -234,16 +262,18 @@ export const TOOL_CATALOG: ToolDescriptor[] = [
   {
     name: "edit_image",
     description:
-      "Start an asynchronous pixel edit on the spatially intended photo. Returns immediately with a jobId and a ghost placement. Pass instruction such as 'remove the cooler'. If spatial intent is ambiguous, this tool will refuse rather than edit the wrong photo.",
+      "Start a Qwen instruct-edit on the photo the human pointed at. Returns a jobId and a ghost variant. If instruction is omitted, uses typed canvas text or sticky notes. Pencil handwriting is not read. Refuses when spatial intent is ambiguous.",
     availability: "when_image_selected",
     annotations: { untrustedContentHint: true },
     inputSchema: {
       type: "object",
       properties: {
-        instruction: { type: "string" },
+        instruction: {
+          type: "string",
+          description: "e.g. add a hat. Optional if the canvas already has typed text.",
+        },
         idempotencyKey: { type: "string" },
       },
-      required: ["instruction"],
       additionalProperties: false,
     },
   },
@@ -256,6 +286,42 @@ export const TOOL_CATALOG: ToolDescriptor[] = [
       properties: { instruction: { type: "string" } },
       additionalProperties: false,
     },
+  },
+  {
+    name: "remove_background",
+    description: "Remove the background of the pointed or selected photo. Lands a ghost variant beside the original.",
+    availability: "when_image_selected",
+    annotations: { untrustedContentHint: true },
+    inputSchema: { type: "object", properties: {}, additionalProperties: false },
+  },
+  {
+    name: "isolate_object",
+    description: "Cut out an object from the selected photo onto a transparent background. Pass object if the human named what to keep.",
+    availability: "when_image_selected",
+    annotations: { untrustedContentHint: true },
+    inputSchema: {
+      type: "object",
+      properties: { object: { type: "string", description: "e.g. the glasses, the person" } },
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "duplicate_selection",
+    description: "Duplicate the currently selected canvas shapes.",
+    availability: "when_shapes_selected",
+    inputSchema: { type: "object", properties: {}, additionalProperties: false },
+  },
+  {
+    name: "undo_canvas",
+    description: "Undo the last canvas change.",
+    availability: "always",
+    inputSchema: { type: "object", properties: {}, additionalProperties: false },
+  },
+  {
+    name: "redo_canvas",
+    description: "Redo the last undone canvas change.",
+    availability: "always",
+    inputSchema: { type: "object", properties: {}, additionalProperties: false },
   },
   {
     name: "generate_image",
@@ -323,8 +389,10 @@ export function toolsForState(snapshot: WorkspaceSnapshot): ToolDescriptor[] {
         return Boolean(snapshot.selection.openGroupId);
       case "when_image_selected":
         return (
+          snapshot.placements.length > 0 ||
           snapshot.selection.placementIds.length > 0 ||
-          snapshot.selection.shapeIds.length > 0
+          snapshot.selection.shapeIds.length > 0 ||
+          snapshot.selection.assetIds.length > 0
         );
       case "when_shapes_selected":
         return snapshot.selection.shapeIds.length >= 1 || snapshot.placements.length >= 1;
@@ -363,13 +431,18 @@ export function executeTool(
     commands: WorkspaceCommands;
     catalog: Catalog;
     spatialIntent: SpatialIntent;
+    canvasView?: CanvasView;
     maskPng?: string;
   },
 ): CommandResult | Promise<CommandResult> {
   const actor = "agent" as const;
   switch (name) {
     case "get_workspace_state":
-      return okData("Workspace snapshot.", ctx.commands.getSnapshot() as unknown as Record<string, unknown>);
+      return okData("Workspace snapshot.", {
+        ...(ctx.commands.getSnapshot() as unknown as Record<string, unknown>),
+        spatialIntent: summarizeIntent(ctx.spatialIntent),
+        canvas: summarizeCanvas(ctx.canvasView),
+      });
     case "get_selection":
       return okData("Current selection.", ctx.catalog.selection as unknown as Record<string, unknown>);
     case "look_at":
@@ -467,6 +540,20 @@ export function executeTool(
       return ctx.commands.restorePhotos(Array.isArray(args.assetIds) ? args.assetIds.map(String) : [], actor);
     case "get_spatial_intent":
       return okData("Resolved spatial intent.", { intent: summarizeIntent(ctx.spatialIntent) });
+    case "get_canvas_state":
+      return okData("Canvas state.", summarizeCanvas(ctx.canvasView));
+    case "grant_consent":
+      return ctx.commands.grantConsent();
+    case "set_selection": {
+      const assetIds = Array.isArray(args.assetIds)
+        ? args.assetIds.map(String)
+        : ctx.catalog.selection.assetIds;
+      return ctx.commands.setSelection({
+        ...ctx.catalog.selection,
+        assetIds,
+        openGroupId: str(args.groupId) ?? ctx.catalog.selection.openGroupId,
+      });
+    }
     case "place_photos":
       return ctx.commands.placePhotos({
         actor,
@@ -496,11 +583,22 @@ export function executeTool(
       if (ctx.spatialIntent.kind === "none") {
         return { ok: false, summary: ctx.spatialIntent.reason, stateChanges: [] };
       }
+      const instruction =
+        str(args.instruction) ?? ctx.spatialIntent.notes.join(" ").trim();
+      if (!instruction) {
+        return {
+          ok: false,
+          summary:
+            "Pass instruction such as 'add a hat', or type it on the canvas with the text tool. Pencil handwriting is not read.",
+          stateChanges: [],
+        };
+      }
       return ctx.commands.startImageJob({
         actor,
-        instruction: String(args.instruction),
-        versionId: ctx.spatialIntent.target.versionId,
-        placementId: ctx.spatialIntent.target.placementId,
+        instruction,
+        versionId: ctx.spatialIntent.target.versionId || undefined,
+        placementId: ctx.spatialIntent.target.placementId || undefined,
+        region: ctx.spatialIntent.region,
         maskPng: ctx.maskPng,
         idempotencyKey: str(args.idempotencyKey),
       });
@@ -525,6 +623,16 @@ export function executeTool(
         placementId: ctx.spatialIntent.target.placementId,
       });
     }
+    case "remove_background":
+      return ctx.commands.removeBackground({ actor });
+    case "isolate_object":
+      return ctx.commands.isolateObject({ actor, object: str(args.object) });
+    case "duplicate_selection":
+      return ctx.commands.duplicateSelection();
+    case "undo_canvas":
+      return ctx.commands.undoCanvas();
+    case "redo_canvas":
+      return ctx.commands.redoCanvas();
     case "accept_variant":
       return ctx.commands.acceptVariant({
         actor,
@@ -579,6 +687,31 @@ function okData(summary: string, data: Record<string, unknown>): CommandResult {
 
 function str(value: unknown): string | undefined {
   return typeof value === "string" && value.length > 0 ? value : undefined;
+}
+
+function summarizeCanvas(view?: CanvasView): Record<string, unknown> {
+  if (!view) {
+    return { images: [], annotations: [], selectedShapeIds: [], viewport: null };
+  }
+  return {
+    images: view.images.map((image) => ({
+      placementId: image.placementId,
+      assetId: image.assetId,
+      versionId: image.versionId,
+      shapeId: image.shapeId,
+      width: image.width,
+      height: image.height,
+    })),
+    annotations: view.annotations.map((item) => ({
+      id: item.id,
+      kind: item.kind,
+      selected: item.selected,
+      text: item.text,
+      pageBounds: item.pageBounds,
+    })),
+    selectedShapeIds: view.selectedShapeIds,
+    viewport: view.viewport,
+  };
 }
 
 function summarizeIntent(intent: SpatialIntent) {

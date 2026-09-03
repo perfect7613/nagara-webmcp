@@ -13,6 +13,12 @@ import {
   recommendInGroup,
 } from "@/modules/preference-profile";
 import { snapshotOf, type CatalogStore } from "@/modules/photo-catalog/store";
+import {
+  composeEditPrompt,
+  shouldInpaint,
+  type CanvasView,
+  type NormalizedRegion,
+} from "@/modules/spatial-intent";
 
 export interface PlacementDraft {
   placementId: string;
@@ -22,6 +28,7 @@ export interface PlacementDraft {
   width: number;
   height: number;
   ghost?: boolean;
+  besideShapeId?: string;
 }
 
 export type LayoutKind =
@@ -44,8 +51,29 @@ export interface CanvasPort {
   ): void;
   markUndo(label: string): void;
   lookAtShape(shapeId: string): void;
+  lookAtShapes(shapeIds: string[]): void;
   selectShapes(shapeIds: string[]): void;
+  stampImageMeta(
+    shapeId: string,
+    meta: { placementId: string; assetId: string; versionId: string },
+  ): void;
   exportFrame(): Promise<{ type: string; href: string } | null>;
+  exportSelection(): Promise<{ type: string; href: string } | null>;
+  undo(): void;
+  redo(): void;
+  canUndo(): boolean;
+  canRedo(): boolean;
+  zoomIn(): void;
+  zoomOut(): void;
+  zoomToFit(): void;
+  resetZoom(): void;
+  getZoomLevel(): number;
+  duplicateSelected(): string[];
+  deleteSelected(): void;
+  bringToFront(shapeIds?: string[]): void;
+  sendToBack(shapeIds?: string[]): void;
+  bringForward(shapeIds?: string[]): void;
+  sendBackward(shapeIds?: string[]): void;
 }
 
 export interface ImageJobPort {
@@ -111,13 +139,221 @@ export function createWorkspaceCommands(
     return next;
   }
 
-  return {
+  const commands = {
     getSnapshot: () => snapshotOf(store.get()),
 
     setSelection(selection: Catalog["selection"]) {
       const catalog = store.get();
       store.set({ ...catalog, selection });
       return ok("Selection updated.", ["selection"]);
+    },
+
+    syncCanvas(view: CanvasView) {
+      const catalog = store.get();
+      const selectedImages = view.images.filter((image) =>
+        view.selectedShapeIds.includes(image.shapeId),
+      );
+      const placementIds = selectedImages
+        .map((image) =>
+          catalog.placements.find(
+            (placement) =>
+              placement.id === image.placementId ||
+              placement.tldrawShapeId === image.shapeId,
+          )?.id,
+        )
+        .filter((id): id is string => Boolean(id));
+      const canvasAssetIds = selectedImages
+        .map((image) => image.assetId)
+        .filter(Boolean);
+      const nextSelection = {
+        ...catalog.selection,
+        shapeIds: view.selectedShapeIds,
+        placementIds,
+        assetIds:
+          canvasAssetIds.length > 0 ? canvasAssetIds : catalog.selection.assetIds,
+      };
+
+      const orphans = view.images.filter(
+        (image) =>
+          !catalog.placements.some(
+            (placement) =>
+              placement.id === image.placementId ||
+              placement.tldrawShapeId === image.shapeId,
+          ),
+      );
+
+      if (orphans.length === 0) {
+        if (selectionUnchanged(catalog.selection, nextSelection)) return ok("Canvas in sync.", []);
+        store.set({ ...catalog, selection: nextSelection });
+        return ok("Canvas selection synced.", ["selection"]);
+      }
+
+      const unbound = catalog.assets.filter(
+        (asset) =>
+          !asset.archivedAt &&
+          !catalog.placements.some(
+            (placement) => placement.assetId === asset.id && !placement.ghostJobId,
+          ),
+      );
+      const now = Date.now();
+      const adoptedAssets: Catalog["assets"] = [];
+      const adoptedVersions: Catalog["versions"] = [];
+      const adoptedPlacements: Placement[] = [];
+
+      for (const image of orphans) {
+        const match =
+          unbound.find((asset) => {
+            const version = catalog.versions.find(
+              (item) => item.id === asset.originalVersionId,
+            );
+            return version && image.src && version.localSrc === image.src;
+          }) ??
+          (unbound.length === 1 ? unbound[0] : undefined) ??
+          (catalog.selection.assetIds.length === 1
+            ? catalog.assets.find((asset) => asset.id === catalog.selection.assetIds[0])
+            : undefined);
+
+        let assetId = match?.id;
+        let versionId = match
+          ? catalog.placements.find((item) => item.assetId === match.id && !item.ghostJobId)
+              ?.activeVersionId ?? match.originalVersionId
+          : "";
+
+        if (!match && image.src) {
+          assetId = createId("ast");
+          versionId = createId("ver");
+          adoptedAssets.push({
+            id: assetId,
+            workspaceId: catalog.workspaceId,
+            kind: "photo",
+            originalVersionId: versionId,
+            createdAt: now,
+          });
+          adoptedVersions.push({
+            id: versionId,
+            assetId,
+            localSrc: image.src,
+            width: image.sourceWidth || image.width,
+            height: image.sourceHeight || image.height,
+            mimeType: "image/jpeg",
+            createdBy: "human",
+            operation: "ingest",
+            createdAt: now,
+          });
+        }
+
+        if (!assetId || !versionId) continue;
+        const placementId = createId("plc");
+        adoptedPlacements.push({
+          id: placementId,
+          workspaceId: catalog.workspaceId,
+          assetId,
+          activeVersionId: versionId,
+          tldrawShapeId: image.shapeId,
+          createdAt: now,
+          updatedAt: now,
+        });
+        canvas?.stampImageMeta(image.shapeId, {
+          placementId,
+          assetId,
+          versionId,
+        });
+        const used = unbound.findIndex((asset) => asset.id === assetId);
+        if (used >= 0) unbound.splice(used, 1);
+      }
+
+      if (adoptedPlacements.length === 0) {
+        if (selectionUnchanged(catalog.selection, nextSelection)) return ok("Canvas in sync.", []);
+        store.set({ ...catalog, selection: nextSelection });
+        return ok("Canvas selection synced.", ["selection"]);
+      }
+
+      mutate(
+        "human",
+        "sync_canvas",
+        "Bind canvas photos",
+        `Bound ${adoptedPlacements.length} photo(s) on the light table.`,
+        adoptedPlacements.map((item) => item.assetId),
+        (current) => ({
+          ...current,
+          assets: [...current.assets, ...adoptedAssets],
+          versions: [...current.versions, ...adoptedVersions],
+          placements: [...current.placements, ...adoptedPlacements],
+          selection: {
+            ...nextSelection,
+            assetIds:
+              nextSelection.assetIds.length > 0
+                ? nextSelection.assetIds
+                : adoptedPlacements.map((item) => item.assetId),
+            placementIds: [
+              ...new Set([...nextSelection.placementIds, ...adoptedPlacements.map((item) => item.id)]),
+            ],
+          },
+        }),
+      );
+      return ok(`Bound ${adoptedPlacements.length} photo(s) on the light table.`, [
+        "placements",
+      ]);
+    },
+
+    ingestPhotos(input: {
+      files: Array<{
+        src: string;
+        name: string;
+        width: number;
+        height: number;
+        mimeType: string;
+        blobKey?: string;
+      }>;
+      actor?: Actor;
+    }) {
+      if (input.files.length === 0) return fail("Drop at least one image.");
+      const catalog = store.get();
+      const actor = input.actor ?? "human";
+      const now = Date.now();
+      const assets = input.files.map(() => ({
+        id: createId("ast"),
+        workspaceId: catalog.workspaceId,
+        kind: "photo" as const,
+        originalVersionId: "",
+        createdAt: now,
+      }));
+      const versions = input.files.map((file, index) => {
+        const versionId = createId("ver");
+        assets[index].originalVersionId = versionId;
+        return {
+          id: versionId,
+          assetId: assets[index].id,
+          originalBlobKey: file.blobKey,
+          localSrc: file.src,
+          width: file.width,
+          height: file.height,
+          mimeType: file.mimeType || "image/jpeg",
+          createdBy: actor,
+          operation: "ingest" as const,
+          parameters: { filename: file.name },
+          createdAt: now,
+        };
+      });
+      const assetIds = assets.map((asset) => asset.id);
+      mutate(
+        actor,
+        "ingest_photos",
+        "Add photos",
+        `Added ${assets.length} photo(s) to the tray.`,
+        assetIds,
+        (current) => ({
+          ...current,
+          assets: [...current.assets, ...assets],
+          versions: [...current.versions, ...versions],
+          selection: {
+            ...current.selection,
+            assetIds,
+            openGroupId: undefined,
+          },
+        }),
+      );
+      return ok(`Added ${assets.length} photo(s) to the tray.`, ["assets"], { assetIds });
     },
 
     recordPreference(input: {
@@ -291,7 +527,20 @@ export function createWorkspaceCommands(
       for (const assetId of assetIds) {
         const asset = catalog.assets.find((item) => item.id === assetId);
         if (!asset || asset.archivedAt) continue;
-        const version = catalog.versions.find((item) => item.id === asset.originalVersionId);
+        if (
+          catalog.placements.some(
+            (placement) => placement.assetId === assetId && !placement.ghostJobId,
+          )
+        ) {
+          continue;
+        }
+        const version =
+          catalog.versions.find(
+            (item) =>
+              item.id ===
+              (catalog.placements.find((placement) => placement.assetId === assetId)
+                ?.activeVersionId ?? asset.originalVersionId),
+          ) ?? catalog.versions.find((item) => item.id === asset.originalVersionId);
         if (!version) continue;
         const placementId = createId("plc");
         drafts.push({
@@ -312,13 +561,16 @@ export function createWorkspaceCommands(
         });
       }
 
-      canvas.markUndo("Place photos");
+      if (drafts.length === 0) {
+        return fail("Those photos are already on the canvas.");
+      }
       const { shapeIds } = canvas.placeImages(drafts);
       const withShapes = placements.map((placement, index) => ({
         ...placement,
         tldrawShapeId: shapeIds[index],
       }));
       if (input.layout) canvas.arrange(shapeIds.filter(Boolean), input.layout);
+      canvas.lookAtShapes(shapeIds.filter(Boolean));
 
       mutate(
         input.actor ?? "human",
@@ -414,6 +666,7 @@ export function createWorkspaceCommands(
       versionId?: string;
       placementId?: string;
       maskPng?: string;
+      region?: NormalizedRegion;
       idempotencyKey?: string;
     }) {
       const key = input.idempotencyKey ?? createId("idem");
@@ -421,29 +674,41 @@ export function createWorkspaceCommands(
       if (cached) return cached;
 
       const catalog = store.get();
-      const placement = catalog.placements.find((item) =>
-        input.placementId
-          ? item.id === input.placementId
-          : catalog.selection.placementIds.includes(item.id),
-      );
-      const versionId =
-        input.versionId ??
-        placement?.activeVersionId ??
-        catalog.versions.find((item) =>
-          catalog.selection.assetIds.some(
-            (assetId) =>
-              catalog.assets.find((asset) => asset.id === assetId)?.originalVersionId ===
-              item.id,
-          ),
-        )?.id;
-      const version = catalog.versions.find((item) => item.id === versionId);
-      if (!version) {
-        return fail("Select a photo on the canvas before editing.");
+      const resolved = resolveEditSource(catalog, input);
+      if (!resolved) {
+        return fail(
+          "Place a photo on the canvas first (select it in the tray, then Place selected).",
+        );
       }
+      const { version } = resolved;
 
       const jobId = createId("job");
       const ghostPlacementId = createId("plc");
-      const operation = input.operation ?? (input.maskPng ? "inpaint" : "instruct_edit");
+      const instruction = input.instruction.trim();
+      if (!instruction) {
+        return fail("Type what to change. Handwriting is not read — use the text box or the text tool.");
+      }
+      const operation =
+        input.operation ??
+        (shouldInpaint(instruction, Boolean(input.maskPng)) ? "inpaint" : "instruct_edit");
+      const providerInstruction = composeEditPrompt(
+        instruction,
+        input.region
+          ? {
+              kind: "clear",
+              target: {
+                placementId: resolved.placement?.id ?? "",
+                assetId: version.assetId,
+                versionId: version.id,
+                shapeId: resolved.placement?.tldrawShapeId ?? "",
+                overlap: 1,
+              },
+              region: input.region,
+              notes: [instruction],
+              annotationKinds: [],
+            }
+          : { kind: "none", reason: "" },
+      );
 
       const ghostVersion: Version = {
         id: createId("ver"),
@@ -455,7 +720,7 @@ export function createWorkspaceCommands(
         mimeType: version.mimeType,
         createdBy: input.actor ?? "agent",
         operation,
-        instruction: input.instruction,
+        instruction,
         createdAt: Date.now(),
       };
 
@@ -467,7 +732,7 @@ export function createWorkspaceCommands(
         inputVersionIds: [version.id],
         outputVersionIds: [],
         placementId: ghostPlacementId,
-        instruction: input.instruction,
+        instruction,
         idempotencyKey: key,
         progress: 0.1,
         requestedBy: input.actor ?? "agent",
@@ -477,6 +742,7 @@ export function createWorkspaceCommands(
       canvas?.markUndo("Edit photo");
       let ghostShapeId: string | undefined;
       if (canvas) {
+        const besideShapeId = resolved.placement?.tldrawShapeId;
         const placed = canvas.placeImages([
           {
             placementId: ghostPlacementId,
@@ -486,16 +752,20 @@ export function createWorkspaceCommands(
             width: version.width,
             height: version.height,
             ghost: true,
+            besideShapeId,
           },
         ]);
         ghostShapeId = placed.shapeIds[0];
+        canvas.lookAtShapes(
+          [besideShapeId, ghostShapeId].filter((id): id is string => Boolean(id)),
+        );
       }
 
       mutate(
         input.actor ?? "agent",
         "edit_image",
         "Edit photo",
-        `Started ${operation}: ${input.instruction}`,
+        `Started ${operation}: ${instruction}`,
         [version.assetId],
         (current) => ({
           ...current,
@@ -533,8 +803,8 @@ export function createWorkspaceCommands(
         ghostVersionId: ghostVersion.id,
         ghostPlacementId,
         sourceUrl: version.localSrc,
-        instruction: input.instruction,
-        maskPng: input.maskPng,
+        instruction: providerInstruction,
+        maskPng: operation === "inpaint" ? input.maskPng : undefined,
         operation,
       });
 
@@ -545,11 +815,15 @@ export function createWorkspaceCommands(
       const catalog = store.get();
       const version = catalog.versions.find((item) => item.id === input.versionId);
       const ghost = catalog.placements.find((item) => item.id === input.placementId);
-      const parentPlacement = catalog.placements.find(
-        (item) =>
-          item.assetId === (version?.assetId ?? ghost?.assetId) &&
-          !item.ghostJobId,
-      );
+      const parentPlacement =
+        catalog.placements.find(
+          (item) =>
+            item.assetId === (version?.assetId ?? ghost?.assetId) &&
+            !item.ghostJobId,
+        ) ??
+        catalog.placements.find(
+          (item) => item.assetId === (version?.assetId ?? ghost?.assetId),
+        );
       if (!parentPlacement || !version) {
         return fail("Could not find a placement to accept this variant onto.");
       }
@@ -622,7 +896,65 @@ export function createWorkspaceCommands(
       });
       return ok("External image-provider consent recorded.", ["consent"]);
     },
+
+    undoCanvas() {
+      if (!canvas) return fail("Canvas is not ready.");
+      if (!canvas.canUndo()) return fail("Nothing to undo.");
+      canvas.undo();
+      return ok("Undid the last canvas change.", ["canvas"]);
+    },
+
+    redoCanvas() {
+      if (!canvas) return fail("Canvas is not ready.");
+      if (!canvas.canRedo()) return fail("Nothing to redo.");
+      canvas.redo();
+      return ok("Redid the last canvas change.", ["canvas"]);
+    },
+
+    duplicateSelection() {
+      if (!canvas) return fail("Canvas is not ready.");
+      const shapeIds = canvas.duplicateSelected();
+      if (shapeIds.length === 0) return fail("Select something on the canvas first.");
+      return ok(`Duplicated ${shapeIds.length} item(s).`, ["canvas"], { shapeIds });
+    },
+
+    deleteSelection() {
+      if (!canvas) return fail("Canvas is not ready.");
+      canvas.deleteSelected();
+      return ok("Deleted the selection.", ["canvas"]);
+    },
+
+    async removeBackground(input: { actor?: Actor } = {}) {
+      if (!store.get().consent.externalProvider) {
+        store.set({
+          ...store.get(),
+          consent: { externalProvider: true, acceptedAt: Date.now() },
+        });
+      }
+      return commands.startImageJob({
+        actor: input.actor ?? "human",
+        instruction:
+          "Remove the background. Keep the subject sharp, full body, with a transparent background.",
+      });
+    },
+
+    async isolateObject(input: { actor?: Actor; object?: string }) {
+      if (!store.get().consent.externalProvider) {
+        store.set({
+          ...store.get(),
+          consent: { externalProvider: true, acceptedAt: Date.now() },
+        });
+      }
+      const target = input.object?.trim();
+      return commands.startImageJob({
+        actor: input.actor ?? "human",
+        instruction: target
+          ? `Isolate ${target} as a clean cutout with a transparent background.`
+          : "Isolate the main subject as a clean cutout with a transparent background.",
+      });
+    },
   };
+  return commands;
 }
 
 async function runJob(input: {
@@ -710,3 +1042,79 @@ async function runJob(input: {
 }
 
 export type WorkspaceCommands = ReturnType<typeof createWorkspaceCommands>;
+
+function resolveEditSource(
+  catalog: Catalog,
+  input: { versionId?: string; placementId?: string },
+): { version: Version; placement?: Placement } | null {
+  if (input.versionId) {
+    const version = catalog.versions.find((item) => item.id === input.versionId);
+    if (version) {
+      const placement = catalog.placements.find(
+        (item) =>
+          item.id === input.placementId ||
+          item.tldrawShapeId === input.placementId ||
+          item.activeVersionId === version.id ||
+          item.assetId === version.assetId,
+      );
+      return { version, placement };
+    }
+  }
+
+  const placement = catalog.placements.find(
+    (item) =>
+      item.id === input.placementId ||
+      item.tldrawShapeId === input.placementId ||
+      (!input.placementId && catalog.selection.placementIds.includes(item.id)),
+  );
+  if (placement) {
+    const version = catalog.versions.find(
+      (item) => item.id === placement.activeVersionId,
+    );
+    if (version) return { version, placement };
+  }
+
+  const assetId = catalog.selection.assetIds[0];
+  if (assetId) {
+    const asset = catalog.assets.find((item) => item.id === assetId);
+    const placed = catalog.placements.find(
+      (item) => item.assetId === assetId && !item.ghostJobId,
+    );
+    const version = catalog.versions.find(
+      (item) => item.id === (placed?.activeVersionId ?? asset?.originalVersionId),
+    );
+    if (version) return { version, placement: placed };
+  }
+
+  const only = catalog.assets.filter((item) => !item.archivedAt);
+  if (only.length === 1) {
+    const version = catalog.versions.find(
+      (item) => item.id === only[0].originalVersionId,
+    );
+    if (version) {
+      return {
+        version,
+        placement: catalog.placements.find((item) => item.assetId === only[0].id),
+      };
+    }
+  }
+
+  return null;
+}
+
+function selectionUnchanged(
+  current: Catalog["selection"],
+  next: Catalog["selection"],
+) {
+  return (
+    current.openGroupId === next.openGroupId &&
+    sameIds(current.assetIds, next.assetIds) &&
+    sameIds(current.placementIds, next.placementIds) &&
+    sameIds(current.shapeIds, next.shapeIds)
+  );
+}
+
+function sameIds(a: string[], b: string[]) {
+  if (a.length !== b.length) return false;
+  return a.every((id, index) => id === b[index]);
+}

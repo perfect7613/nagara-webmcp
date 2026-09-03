@@ -3,7 +3,11 @@
 import { useEffect, useMemo } from "react";
 import { useWebMCP } from "use-webmcp-tool";
 import type { Catalog } from "@/domain/types";
-import { maskToPngDataUrl, type SpatialIntent } from "@/modules/spatial-intent";
+import {
+  maskToPngDataUrl,
+  type CanvasView,
+  type SpatialIntent,
+} from "@/modules/spatial-intent";
 import {
   executeTool,
   formatToolResult,
@@ -17,10 +21,12 @@ export function WebMcpBridge({
   commands,
   catalog,
   spatialIntent,
+  canvasView,
 }: {
   commands: WorkspaceCommands;
   catalog: Catalog;
   spatialIntent: SpatialIntent;
+  canvasView: CanvasView;
 }) {
   const enabled = useMemo(
     () => new Set(toolsForState(commands.getSnapshot()).map((tool) => tool.name)),
@@ -37,6 +43,7 @@ export function WebMcpBridge({
           commands={commands}
           catalog={catalog}
           spatialIntent={spatialIntent}
+          canvasView={canvasView}
         />
       ))}
     </>
@@ -49,12 +56,14 @@ function RegisteredTool({
   commands,
   catalog,
   spatialIntent,
+  canvasView,
 }: {
   tool: ToolDescriptor;
   enabled: boolean;
   commands: WorkspaceCommands;
   catalog: Catalog;
   spatialIntent: SpatialIntent;
+  canvasView: CanvasView;
 }) {
   const maskPng = useMemo(() => {
     if (spatialIntent.kind !== "clear" || !spatialIntent.mask) return undefined;
@@ -72,6 +81,7 @@ function RegisteredTool({
         commands,
         catalog,
         spatialIntent,
+        canvasView,
         maskPng,
       });
       return formatToolResult(result);

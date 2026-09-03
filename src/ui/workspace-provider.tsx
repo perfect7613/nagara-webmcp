@@ -12,7 +12,7 @@ import {
 } from "react";
 import type { Editor } from "tldraw";
 import { createTldrawCanvasPort } from "@/adapters/tldraw/canvas-port";
-import { buildDemoCatalog } from "@/modules/photo-catalog/demo";
+import { buildDemoCatalog, emptyCatalog } from "@/modules/photo-catalog/demo";
 import { createMemoryCatalogStore } from "@/modules/photo-catalog/store";
 import {
   createWorkspaceCommands,
@@ -21,7 +21,7 @@ import {
 } from "@/modules/workspace-command";
 import type { Catalog } from "@/domain/types";
 
-const KEY = "keepers.catalog.v1";
+export const CATALOG_KEY = "keepers.catalog.v3";
 
 const WorkspaceContext = createContext<{
   catalog: Catalog;
@@ -41,11 +41,12 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const jobPort = useMemo<ImageJobPort>(
     () => ({
       async start(input) {
+        const sourceUrl = await asJobSource(input.sourceUrl);
         const response = await fetch("/api/jobs", {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({
-            sourceUrl: input.sourceUrl,
+            sourceUrl,
             instruction: input.instruction,
             maskPng: input.maskPng,
             allowDemoFallback: process.env.NEXT_PUBLIC_ALLOW_DEMO_FALLBACK === "1",
@@ -79,7 +80,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     try {
-      localStorage.setItem(KEY, JSON.stringify(catalog));
+      localStorage.setItem(CATALOG_KEY, JSON.stringify(catalog));
     } catch {
       /* quota */
     }
@@ -110,12 +111,50 @@ export function useWorkspace() {
 }
 
 function loadCatalog(): Catalog {
-  if (typeof window === "undefined") return buildDemoCatalog();
+  if (typeof window === "undefined") return emptyCatalog();
   try {
-    const raw = localStorage.getItem(KEY);
+    const raw = localStorage.getItem(CATALOG_KEY);
     if (raw) return JSON.parse(raw) as Catalog;
   } catch {
     /* ignore */
   }
-  return buildDemoCatalog();
+  return emptyCatalog();
+}
+
+export function loadDemoCatalog() {
+  try {
+    localStorage.setItem(CATALOG_KEY, JSON.stringify(buildDemoCatalog()));
+  } catch {
+    /* quota */
+  }
+  window.location.reload();
+}
+
+export function clearWorkspaceCatalog() {
+  try {
+    localStorage.removeItem(CATALOG_KEY);
+    localStorage.removeItem("keepers.catalog.v2");
+  } catch {
+    /* ignore */
+  }
+  window.location.reload();
+}
+
+async function asJobSource(url: string) {
+  if (url.startsWith("data:")) return url;
+  if (url.startsWith("blob:") || url.startsWith("/")) {
+    const response = await fetch(url);
+    const blob = await response.blob();
+    return await blobToDataUrl(blob);
+  }
+  return url;
+}
+
+function blobToDataUrl(blob: Blob) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(blob);
+  });
 }

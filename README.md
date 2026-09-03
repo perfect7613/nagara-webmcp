@@ -48,7 +48,7 @@ Open [http://localhost:3000](http://localhost:3000).
 | `TLDRAW_LICENSE_KEY` | No | Removes the tldraw watermark |
 | `NEXT_PUBLIC_ALLOW_DEMO_FALLBACK` | Defaults on | Labeled local preview when no HF token |
 
-Without keys, the prepared July weekend collection still runs. Pixel edits use a **labeled local preview**, not a silent fake model.
+The tray starts empty. Drop photos to upload them through UploadThing (or keep them locally if the token is missing). **Load demo** in the workspace fills the prepared July weekend collection for judges. Pixel edits without `HF_TOKEN` use a **labeled local preview**, not a silent fake model.
 
 ## Test WebMCP
 

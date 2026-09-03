@@ -119,6 +119,26 @@ describe("spatial intent resolver", () => {
     expect(intent.kind).toBe("ambiguous");
   });
 
+  it("reads typed arrow labels as edit notes", () => {
+    const intent = resolveSpatialIntent(
+      view({
+        annotations: [
+          {
+            id: "arr_1",
+            kind: "arrow",
+            selected: false,
+            pageBounds: { x: 300, y: 120, w: 40, h: 80 },
+            text: "add a hat",
+          },
+        ],
+      }),
+    );
+    expect(intent.kind).toBe("clear");
+    if (intent.kind === "clear") {
+      expect(intent.notes).toContain("add a hat");
+    }
+  });
+
   it("rasterizes a scribble into a non-empty mask", () => {
     const mask = rasterizeScribble(
       [

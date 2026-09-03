@@ -29,6 +29,7 @@ export interface CanvasImage {
   assetId: string;
   versionId: string;
   shapeId: string;
+  src?: string;
   pageTransform: Affine;
   width: number;
   height: number;
@@ -235,18 +236,13 @@ export function resolveSpatialIntent(view: CanvasView): SpatialIntent {
           view.selectedShapeIds.includes(item.id),
         );
   const relevant =
-    annotations.length > 0
-      ? annotations
-      : view.annotations.filter((item) => item.kind === "note");
+    annotations.length > 0 ? annotations : view.annotations;
 
   const selectedImages = view.images.filter((image) =>
     view.selectedShapeIds.includes(image.shapeId),
   );
 
-  const notes = view.annotations
-    .filter((item) => item.kind === "note" && item.text)
-    .map((item) => item.text!)
-    .filter(Boolean);
+  const notes = notesFromView(view);
 
   if (view.images.length === 0) {
     return { kind: "none", reason: "No photos are on the canvas." };
@@ -407,6 +403,39 @@ function rasterizeBox(region: NormalizedRegion, source: Size): AlphaMask {
     bytes.fill(255, y * width + minX, y * width + maxX);
   }
   return { width, height, bytes };
+}
+
+export function notesFromView(view: CanvasView): string[] {
+  const seen = new Set<string>();
+  const notes: string[] = [];
+  for (const item of view.annotations) {
+    const text = item.text?.replace(/\s+/g, " ").trim();
+    if (!text || seen.has(text)) continue;
+    seen.add(text);
+    notes.push(text);
+  }
+  return notes;
+}
+
+export function composeEditPrompt(
+  instruction: string,
+  intent: SpatialIntent,
+): string {
+  const trimmed = instruction.trim();
+  if (!trimmed) return trimmed;
+  if (intent.kind !== "clear") return trimmed;
+  if (intent.region) {
+    return `${trimmed} Apply this edit to the marked region of the photo (about ${intent.region.w}×${intent.region.h} pixels where the human pointed). Keep the rest of the photo, especially faces, clothing, and background, unchanged.`;
+  }
+  return `${trimmed} Keep the person's identity, clothing, and background unchanged unless the instruction says otherwise.`;
+}
+
+function inferInpaint(instruction: string): boolean {
+  return /\b(remove|erase|inpaint|delete|wipe off|wipe away)\b/i.test(instruction);
+}
+
+export function shouldInpaint(instruction: string, hasMask: boolean): boolean {
+  return hasMask && inferInpaint(instruction);
 }
 
 function toTarget(image: CanvasImage, overlap: number): ImageTarget {
