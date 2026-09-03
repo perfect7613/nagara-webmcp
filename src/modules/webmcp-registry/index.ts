@@ -1,9 +1,9 @@
 import type { CommandResult } from "@/domain/types";
 import { isCategory } from "@/modules/classify-issue";
-import { listRelatedTenders } from "@/modules/tenders";
+import { hydrateTenders, listRelatedTenders } from "@/modules/tenders";
 import type { VoiceCommands } from "@/modules/voice-command";
 
-export type ToolAvailability = "always" | "when_draft" | "when_selected";
+export type ToolAvailability = "always";
 
 export interface ToolDescriptor {
   name: string;
@@ -17,10 +17,45 @@ export const TOOL_CATALOG: ToolDescriptor[] = [
   {
     name: "get_workspace_state",
     description:
-      "Read Nagara: Bengaluru voice counts by category, selected pin, and the current photo/area draft. Call this first.",
+      "Read Nagara first. Returns voice counts, the selected pin, and the filing form (photo, area name, title, body, category).",
     availability: "always",
     annotations: { readOnlyHint: true },
     inputSchema: { type: "object", properties: {}, additionalProperties: false },
+  },
+  {
+    name: "set_draft",
+    description:
+      "Fill the filing form the human can see. Pass areaName (HSR Layout, Bellandur, Whitefield) and optional photoUrl, title, body, category. Then call file_voice.",
+    availability: "always",
+    inputSchema: {
+      type: "object",
+      properties: {
+        photoUrl: { type: "string" },
+        photoName: { type: "string" },
+        areaName: { type: "string" },
+        title: { type: "string" },
+        body: { type: "string" },
+        category: { type: "string" },
+        lng: { type: "number" },
+        lat: { type: "number" },
+      },
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "attach_photo",
+    description:
+      "Host a public image URL through UploadThing and put it on the form. Use this when Codex or ChatGPT has a photo URL. Then set_draft areaName and file_voice.",
+    availability: "always",
+    inputSchema: {
+      type: "object",
+      properties: {
+        photoUrl: { type: "string" },
+        name: { type: "string" },
+      },
+      required: ["photoUrl"],
+      additionalProperties: false,
+    },
   },
   {
     name: "resolve_ward",
@@ -33,6 +68,37 @@ export const TOOL_CATALOG: ToolDescriptor[] = [
         areaName: { type: "string" },
         lng: { type: "number" },
         lat: { type: "number" },
+      },
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "classify_issue",
+    description:
+      "Suggest Flooding, Water, Lakes, or Works from a caption. Pass caption if the form is still empty. Never default to pothole or waste.",
+    availability: "always",
+    annotations: { readOnlyHint: true },
+    inputSchema: {
+      type: "object",
+      properties: { caption: { type: "string" } },
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "file_voice",
+    description:
+      "File the voice and drop a pin. Needs a photo (photoUrl or the form) and an area name. Resolves the ward, classifies if needed, then selects the new pin.",
+    availability: "always",
+    inputSchema: {
+      type: "object",
+      properties: {
+        title: { type: "string" },
+        body: { type: "string" },
+        areaName: { type: "string" },
+        category: { type: "string" },
+        lng: { type: "number" },
+        lat: { type: "number" },
+        photoUrl: { type: "string" },
       },
       additionalProperties: false,
     },
@@ -54,7 +120,7 @@ export const TOOL_CATALOG: ToolDescriptor[] = [
   },
   {
     name: "get_voice",
-    description: "Read one voice: photos, ward, supporters, timeline, related tenders.",
+    description: "Read one voice: photos, ward, supporters, timeline, related public records.",
     availability: "always",
     annotations: { readOnlyHint: true },
     inputSchema: {
@@ -65,21 +131,29 @@ export const TOOL_CATALOG: ToolDescriptor[] = [
     },
   },
   {
-    name: "enrich_source",
-    description:
-      "Firecrawl-scrape an allowlisted civic URL (OpenCity or karnatakatenders.in) into JSON and attach it to the selected voice.",
+    name: "focus_voice",
+    description: "Pan the shared map to a voice so the human and agent look at the same pin.",
     availability: "always",
     inputSchema: {
       type: "object",
-      properties: { url: { type: "string" } },
-      required: ["url"],
+      properties: { voiceId: { type: "string" } },
+      required: ["voiceId"],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "support_voice",
+    description: "Join this voice instead of filing a duplicate.",
+    availability: "always",
+    inputSchema: {
+      type: "object",
+      properties: { voiceId: { type: "string" } },
       additionalProperties: false,
     },
   },
   {
     name: "list_related_tenders",
-    description:
-      "Return structured tender JSON for an area/ward/category (SWD, lake, UGD — not NH road packages).",
+    description: "Return public stormwater, lake, UGD, and water records for an area or category.",
     availability: "always",
     annotations: { readOnlyHint: true },
     inputSchema: {
@@ -94,65 +168,27 @@ export const TOOL_CATALOG: ToolDescriptor[] = [
     },
   },
   {
-    name: "file_voice",
+    name: "enrich_source",
     description:
-      "File a civic voice from the current draft or explicit photo/area/category. Resolves the ward and drops a pin.",
-    availability: "when_draft",
+      "Firecrawl-scrape an allowlisted civic URL (OpenCity, karnatakatenders.in, The News Minute) into JSON.",
+    availability: "always",
     inputSchema: {
       type: "object",
-      properties: {
-        title: { type: "string" },
-        body: { type: "string" },
-        areaName: { type: "string" },
-        category: { type: "string" },
-        lng: { type: "number" },
-        lat: { type: "number" },
-        photoUrl: { type: "string" },
-      },
+      properties: { url: { type: "string" } },
+      required: ["url"],
       additionalProperties: false,
     },
   },
   {
-    name: "classify_issue",
-    description:
-      "Suggest Flooding / Water / Lakes / Works / Encroach / Footpaths / Lights / Other from caption + area. Never defaults to pothole or waste.",
-    availability: "when_draft",
-    annotations: { readOnlyHint: true },
+    name: "refresh_tenders",
+    description: "Pull live OpenCity stormwater and lake records into the map catalog.",
+    availability: "always",
     inputSchema: { type: "object", properties: {}, additionalProperties: false },
-  },
-  {
-    name: "support_voice",
-    description: "Join the selected voice instead of filing a duplicate.",
-    availability: "when_selected",
-    inputSchema: {
-      type: "object",
-      properties: { voiceId: { type: "string" } },
-      additionalProperties: false,
-    },
-  },
-  {
-    name: "focus_voice",
-    description: "Pan the shared map to a voice so the human and agent look at the same pin.",
-    availability: "when_selected",
-    inputSchema: {
-      type: "object",
-      properties: { voiceId: { type: "string" } },
-      required: ["voiceId"],
-      additionalProperties: false,
-    },
   },
 ];
 
-export function toolsForState(commands: VoiceCommands): ToolDescriptor[] {
-  const state = commands.getState();
-  const hasDraft = Boolean(state.draft.photoUrl || state.draft.areaName);
-  const hasSelected = Boolean(state.selectedVoiceId);
-  return TOOL_CATALOG.filter((tool) => {
-    if (tool.availability === "always") return true;
-    if (tool.availability === "when_draft") return hasDraft || hasSelected;
-    if (tool.availability === "when_selected") return hasSelected;
-    return false;
-  });
+export function toolsForState(): ToolDescriptor[] {
+  return TOOL_CATALOG;
 }
 
 export function formatToolResult(result: CommandResult) {
@@ -167,14 +203,67 @@ export async function executeTool(
   args: Record<string, unknown>,
   commands: VoiceCommands,
 ): Promise<CommandResult> {
+  const result = await runTool(name, args, commands);
+  if (name !== "get_workspace_state") {
+    commands.logActivity({ tool: name, summary: result.summary, actor: "agent" });
+  }
+  return result;
+}
+
+async function runTool(
+  name: string,
+  args: Record<string, unknown>,
+  commands: VoiceCommands,
+): Promise<CommandResult> {
   switch (name) {
     case "get_workspace_state":
-      return { ok: true, summary: "City snapshot.", stateChanges: [], data: commands.getSnapshot() as unknown as Record<string, unknown> };
+      return {
+        ok: true,
+        summary: "City snapshot.",
+        stateChanges: [],
+        data: commands.getSnapshot() as unknown as Record<string, unknown>,
+      };
+    case "set_draft":
+      return commands.setDraft({
+        photoUrl: str(args.photoUrl),
+        photoName: str(args.photoName),
+        areaName: str(args.areaName),
+        title: str(args.title),
+        body: str(args.body),
+        category: isCategory(args.category) ? args.category : undefined,
+        lng: num(args.lng),
+        lat: num(args.lat),
+      });
+    case "attach_photo": {
+      const photoUrl = str(args.photoUrl);
+      if (!photoUrl) return { ok: false, summary: "photoUrl is required.", stateChanges: [] };
+      const response = await fetch("/api/attach-photo", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ photoUrl, name: str(args.name) }),
+      });
+      const data = (await response.json()) as { photoUrl?: string; name?: string; error?: string };
+      const hosted = data.photoUrl ?? photoUrl;
+      return commands.setDraft({ photoUrl: hosted, photoName: data.name ?? str(args.name) });
+    }
     case "resolve_ward":
       return commands.resolveWard({
         areaName: str(args.areaName),
         lng: num(args.lng),
         lat: num(args.lat),
+      });
+    case "classify_issue":
+      return commands.classifyDraft(str(args.caption));
+    case "file_voice":
+      return commands.fileVoice({
+        actor: "agent",
+        title: str(args.title),
+        body: str(args.body),
+        areaName: str(args.areaName),
+        category: isCategory(args.category) ? args.category : undefined,
+        lng: num(args.lng),
+        lat: num(args.lat),
+        photoUrl: str(args.photoUrl),
       });
     case "list_voices":
       return commands.listVoices({
@@ -187,6 +276,13 @@ export async function executeTool(
       if (!id) return { ok: false, summary: "voiceId is required.", stateChanges: [] };
       return commands.getVoice(id);
     }
+    case "focus_voice": {
+      const id = str(args.voiceId);
+      if (!id) return { ok: false, summary: "voiceId is required.", stateChanges: [] };
+      return commands.focusVoice(id);
+    }
+    case "support_voice":
+      return commands.supportVoice(str(args.voiceId));
     case "list_related_tenders": {
       const tenders = listRelatedTenders({
         areaName: str(args.areaName),
@@ -194,27 +290,7 @@ export async function executeTool(
         category: isCategory(args.category) ? args.category : undefined,
         query: str(args.query),
       });
-      return { ok: true, summary: `${tenders.length} related tender(s).`, stateChanges: [], data: { tenders } };
-    }
-    case "file_voice":
-      return commands.fileVoice({
-        actor: "agent",
-        title: str(args.title),
-        body: str(args.body),
-        areaName: str(args.areaName),
-        category: isCategory(args.category) ? args.category : undefined,
-        lng: num(args.lng),
-        lat: num(args.lat),
-        photoUrl: str(args.photoUrl),
-      });
-    case "classify_issue":
-      return commands.classifyDraft();
-    case "support_voice":
-      return commands.supportVoice(str(args.voiceId));
-    case "focus_voice": {
-      const id = str(args.voiceId);
-      if (!id) return { ok: false, summary: "voiceId is required.", stateChanges: [] };
-      return commands.focusVoice(id);
+      return { ok: true, summary: `${tenders.length} related record(s).`, stateChanges: [], data: { tenders } };
     }
     case "enrich_source": {
       const url = str(args.url);
@@ -230,6 +306,17 @@ export async function executeTool(
         summary: response.ok ? "Source enriched." : "Enrich failed.",
         stateChanges: [],
         data,
+      };
+    }
+    case "refresh_tenders": {
+      const response = await fetch("/api/tenders");
+      const data = (await response.json()) as { tenders?: ReturnType<typeof listRelatedTenders>; live?: boolean };
+      if (data.tenders) hydrateTenders(data.tenders);
+      return {
+        ok: response.ok,
+        summary: data.live ? `Live catalog: ${data.tenders?.length ?? 0} records.` : "Using bundled OpenCity and news records.",
+        stateChanges: ["tenders"],
+        data: data as Record<string, unknown>,
       };
     }
     default:

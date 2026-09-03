@@ -14,7 +14,7 @@ import { listRelatedTenders } from "@/modules/tenders";
 import { fromAreaName, fromPoint, nearbyAliases } from "@/modules/ward-lookup";
 import { SEEDED_VOICES } from "@/modules/voices/seed";
 
-const STORAGE_KEY = "nagara.voices.v1";
+const STORAGE_KEY = "nagara.city.v2";
 
 const emptyDraft = (): VoiceDraft => ({
   areaName: "",
@@ -35,6 +35,7 @@ export function emptyCity(): CityState {
     draft: emptyDraft(),
     selectedVoiceId: SEEDED_VOICES[0]?.id ?? null,
     focusedVoiceId: null,
+    activity: [],
     updatedAt: new Date().toISOString(),
   };
 }
@@ -46,7 +47,7 @@ export function loadCity(): CityState {
     if (!raw) return emptyCity();
     const parsed = JSON.parse(raw) as CityState;
     if (!Array.isArray(parsed.voices)) return emptyCity();
-    return parsed;
+    return { ...emptyCity(), ...parsed, activity: parsed.activity ?? [] };
   } catch {
     return emptyCity();
   }
@@ -62,7 +63,8 @@ export interface VoiceCommands {
   getSnapshot: () => CitySnapshot;
   setDraft: (patch: Partial<VoiceDraft>) => CommandResult;
   resolveWard: (input: { areaName?: string; lng?: number; lat?: number }) => CommandResult;
-  classifyDraft: () => CommandResult;
+  classifyDraft: (caption?: string) => CommandResult;
+  logActivity: (entry: { tool: string; summary: string; actor?: Actor }) => CommandResult;
   fileVoice: (input?: {
     actor?: Actor;
     title?: string;
@@ -127,11 +129,14 @@ export function createVoiceCommands(
     getSnapshot: () => snapshotOf(getState()),
     setDraft(patch) {
       const state = getState();
+      const cleaned = Object.fromEntries(
+        Object.entries(patch).filter(([, value]) => value !== undefined),
+      ) as Partial<VoiceDraft>;
       return commit(
-        { ...state, draft: { ...state.draft, ...patch } },
-        "Draft updated.",
+        { ...state, draft: { ...state.draft, ...cleaned } },
+        "Form updated.",
         ["draft"],
-        { draft: { ...state.draft, ...patch } },
+        { draft: { ...state.draft, ...cleaned } },
       );
     },
     resolveWard(input) {
@@ -146,9 +151,9 @@ export function createVoiceCommands(
         nearby: nearbyAliases(ward),
       });
     },
-    classifyDraft() {
+    classifyDraft(caption) {
       const draft = getState().draft;
-      const result = classifyIssue(`${draft.title} ${draft.body} ${draft.areaName}`);
+      const result = classifyIssue(caption ?? `${draft.title} ${draft.body} ${draft.areaName}`);
       if (result.category) {
         const state = getState();
         return commit(
@@ -208,7 +213,7 @@ export function createVoiceCommands(
         status: "on_record",
         timeline: [
           { at: now, label: "Reported", actor },
-          { at: now, label: `Ward matched — ${ward.name}`, actor: "agent" },
+          { at: now, label: `Ward matched: ${ward.name}`, actor: "agent" },
           { at: now, label: "On record in Nagara", actor: "agent" },
         ],
         tenders: listRelatedTenders({ areaName, category, wardId: ward.name }),
@@ -293,6 +298,21 @@ export function createVoiceCommands(
         return commit({ ...state, voices }, `${tenders.length} related tender(s).`, ["voices"], { tenders });
       }
       return ok(`${tenders.length} related tender(s).`, [], { tenders });
+    },
+    logActivity(entry) {
+      const state = getState();
+      const item = {
+        at: new Date().toISOString(),
+        tool: entry.tool,
+        summary: entry.summary,
+        actor: entry.actor ?? "agent",
+      };
+      return commit(
+        { ...state, activity: [item, ...state.activity].slice(0, 12) },
+        entry.summary,
+        ["activity"],
+        { activity: item },
+      );
     },
   };
 }

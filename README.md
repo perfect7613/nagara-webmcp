@@ -1,26 +1,41 @@
 # Nagara
 
-A Bengaluru civic-voice map. A person drops a **photo** and an **area name**. The page resolves the **GBA ward**, pins a **Voice**, and shows **related public tenders** (stormwater, lakes, UGD). ChatGPT uses **WebMCP** on the same map.
+Live: https://nagara-webmcp.vercel.app
 
-Open [http://localhost:3000](http://localhost:3000). Product at `/world`. File a voice at `/create`.
+A Bengaluru civic-voice map. A person (or a WebMCP agent) adds a photo and an area name. The page matches the GBA ward, pins the voice, and shows public stormwater, lake, and UGD records next to it.
 
-## Why WebMCP
+Product copy: `/world`. Filing map: `/create`.
 
-The human and the agent share one city. Tools are registered on this origin:
+## Why this is a WebMCP app
 
-- `get_workspace_state`
-- `resolve_ward`
-- `list_voices` / `get_voice`
-- `file_voice` / `classify_issue`
-- `support_voice` / `focus_voice`
-- `list_related_tenders` / `enrich_source`
+Filing a civic report is a shared task. The human has the photo. The agent can type the area, classify the issue, match the ward, and drop the pin. If the agent only clicked around the DOM, the form and the map would drift. WebMCP tools call the same commands the form uses, so both of you watch the fields fill and the pin land.
 
-Suggested prompts (none are potholes):
+What that unlocks:
 
-- Photo of stormwater overflowing into houses in HSR Layout after rain from Madiwala/BTM toward Bellandur. Resolve the ward, file a Flooding voice, list related SWD tenders.
-- Street waterlogged at Kaikondrahalli. Classify as Flooding, file it, check lake/drain tenders.
-- This Bellandur bund still takes sewage from stormwater drains. File a Lakes voice.
-- BWSSB cut this freshly laid stretch for UGD and left it open. File a Works voice.
+- Codex or ChatGPT can open `/create`, take your photo URL and area name, and file the voice without guessing buttons.
+- You can still drop the photo yourself. The agent only fills what you did not.
+- `enrich_source` and `refresh_tenders` pull OpenCity and related civic pages through Firecrawl, then attach them to the pin the agent just filed.
+
+## How WebMCP is implemented
+
+Tools register on this origin with `use-webmcp-tool` (`document.modelContext.registerTool` under the hood). They are available on `/`, `/world`, and `/create`.
+
+| Tool | What it does |
+|---|---|
+| `get_workspace_state` | Voice counts, selected pin, current form |
+| `attach_photo` | Host a public image URL with UploadThing and put it on the form |
+| `set_draft` | Fill the form the human can see |
+| `classify_issue` | Flooding / water / lakes / works from a caption |
+| `resolve_ward` | Area name or coordinates to a GBA ward |
+| `file_voice` | Pin the voice and select it |
+| `focus_voice` / `support_voice` | Pan the map or join an existing pin |
+| `list_related_tenders` / `refresh_tenders` / `enrich_source` | Public records via bundled OpenCity sources and live Firecrawl |
+
+Agent instructions also live at `/llms.txt`.
+
+## Codex prompt
+
+Open https://nagara-webmcp.vercel.app/create. I took a photo of a civic failure in Bengaluru. Use the page's WebMCP tools: get_workspace_state, attach_photo or set_draft with the photo, set the area name, classify_issue, resolve_ward, then file_voice. The pin should appear on the map.
 
 Judges: ChatGPT in-app browser, or Chrome 149+ with `chrome://flags/#enable-webmcp-testing`.
 
@@ -28,27 +43,22 @@ Judges: ChatGPT in-app browser, or Chrome 149+ with `chrome://flags/#enable-webm
 
 ```bash
 cp .env.example .env.local
+# add UPLOADTHING_TOKEN and FIRECRAWL_API_KEY
 npm install
 npm test
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). Product at `/world`. File a voice at `/create`.
-
-| Variable | Required | Purpose |
+| Variable | Required for live data | Purpose |
 |---|---|---|
-| `UPLOADTHING_TOKEN` | No | Evidence photo hosting |
-| `FIRECRAWL_API_KEY` | No | Allowlisted enrich; otherwise labeled stub JSON |
+| `UPLOADTHING_TOKEN` | Photo hosting for humans and `attach_photo` | Evidence photos |
+| `FIRECRAWL_API_KEY` | `/api/tenders` and `enrich_source` | OpenCity and allowlisted civic pages |
 
-## Design
-
-Visual language from a Firecrawl design-clone of [swarajapp.com](https://swarajapp.com/) — see [`DESIGN.md`](DESIGN.md). `/` is a Bengaluru aerial hero. Product copy lives on `/world`. Original brand. No Swaraj logos or slogans.
+Without the keys, filing still works with a local photo. Tender rails fall back to the bundled OpenCity and news records in `public/data/tenders-sample.json`.
 
 ## Data
 
-- Seeded wards are locality aliases for the demo.
-- `public/data/tenders-sample.json` is mixed SWD/lake/UGD/water rows from a public listing style.
-- Aerial film: Pexels, Anil Sharma.
+Bundled map records are real public sources (OpenCity SWD maps and CAG audit, The News Minute on the Rs 175 crore KR Market to Bellandur drain). Live refresh scrapes OpenCity when `FIRECRAWL_API_KEY` is set. Ward pins use locality aliases for the demo. Aerial film: Pexels, Anil Sharma. Bellandur stills: Wikimedia Commons.
 
 ## License
 

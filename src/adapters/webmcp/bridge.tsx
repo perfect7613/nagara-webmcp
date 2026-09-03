@@ -19,10 +19,7 @@ export function WebMcpBridge({
   commands: VoiceCommands;
   state: CityState;
 }) {
-  const enabled = useMemo(
-    () => new Set(toolsForState(commands).map((tool) => tool.name)),
-    [state.updatedAt, state.selectedVoiceId, state.draft],
-  );
+  const enabled = useMemo(() => new Set(toolsForState().map((tool) => tool.name)), []);
 
   return (
     <>

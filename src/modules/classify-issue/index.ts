@@ -51,7 +51,7 @@ export function classifyIssue(text: string): {
 } {
   const hay = text.toLowerCase();
   if (!hay.trim()) {
-    return { category: null, confidence: 0, reason: "Pick a category chip — nothing to classify yet." };
+    return { category: null, confidence: 0, reason: "Pick a category chip. Nothing to classify yet." };
   }
 
   for (const rule of RULES) {
@@ -60,7 +60,7 @@ export function classifyIssue(text: string): {
       return {
         category: rule.category,
         confidence: 0.82,
-        reason: `Matched “${hit}” → ${rule.category}.`,
+        reason: `Matched "${hit}" to ${rule.category}.`,
       };
     }
   }
@@ -68,7 +68,7 @@ export function classifyIssue(text: string): {
   return {
     category: null,
     confidence: 0,
-    reason: "Unclear. Ask the human to pick a chip — do not default to waste or roads.",
+    reason: "Unclear. Ask the human to pick a chip. Do not default to waste or roads.",
   };
 }
 

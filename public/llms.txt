@@ -1,0 +1,23 @@
+# Nagara
+
+Live map: https://nagara-webmcp.vercel.app/create
+Product: https://nagara-webmcp.vercel.app/world
+
+This origin registers WebMCP tools. Use them. Do not guess at buttons.
+
+## File a voice from a photo and an area name
+
+1. Open /create
+2. get_workspace_state
+3. If you have a public image URL, attach_photo { "photoUrl": "https://..." }
+4. set_draft { "areaName": "HSR Layout", "title": "...", "body": "..." }
+5. classify_issue { "caption": "stormwater overflow into houses after rain" }
+6. resolve_ward { "areaName": "HSR Layout" }
+7. file_voice (photoUrl and areaName can be omitted if the form already has them)
+8. The new pin is selected. Call list_related_tenders if you need the public records.
+
+Do not file potholes or garbage as the lead issue. Prefer flooding, water, lakes, or unfinished works.
+
+## Tools
+
+get_workspace_state, attach_photo, set_draft, classify_issue, resolve_ward, file_voice, list_voices, get_voice, focus_voice, support_voice, list_related_tenders, refresh_tenders, enrich_source

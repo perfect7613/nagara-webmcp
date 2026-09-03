@@ -7,9 +7,11 @@ import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { CATEGORIES, CATEGORY_LABEL, CATEGORY_TONE } from "@/domain/categories";
 import { PRODUCT_NAME } from "@/domain/product";
-import { listRelatedTenders } from "@/modules/tenders";
+import { hydrateTenders, listRelatedTenders } from "@/modules/tenders";
 import { useCity } from "@/ui/voice-provider";
 import { useUploadThing } from "@/adapters/uploadthing/client";
+import { WebMcpStatus } from "@/components/webmcp-status";
+import type { RelatedTender } from "@/domain/types";
 
 export function CreateMap() {
   const { state, commands } = useCity();
@@ -19,6 +21,7 @@ export function CreateMap() {
   const markers = useRef<maplibregl.Marker[]>([]);
   const focusedQuery = useRef(false);
   const [status, setStatus] = useState("");
+  const [tenderSource, setTenderSource] = useState("bundled");
   const { startUpload, isUploading } = useUploadThing("originals", {
     onClientUploadComplete(files) {
       const file = files[0];
@@ -27,15 +30,13 @@ export function CreateMap() {
   });
 
   const selected = state.voices.find((voice) => voice.id === state.selectedVoiceId) ?? null;
-  const tenders = useMemo(
-    () =>
-      selected?.tenders.length
-        ? selected.tenders
-        : selected
-          ? listRelatedTenders({ category: selected.category, areaName: selected.areaName })
-          : [],
-    [selected],
-  );
+  const tenders = useMemo(() => {
+    if (!selected) return [];
+    const related = listRelatedTenders({ category: selected.category, areaName: selected.areaName });
+    const byRef = new Map(selected.tenders.map((row) => [row.refNo, row]));
+    for (const row of related) byRef.set(row.refNo, row);
+    return [...byRef.values()];
+  }, [selected, tenderSource]);
 
   useEffect(() => {
     const voiceId = searchParams.get("voice");
@@ -43,6 +44,16 @@ export function CreateMap() {
     focusedQuery.current = true;
     commands.focusVoice(voiceId);
   }, [commands, searchParams]);
+
+  useEffect(() => {
+    fetch("/api/tenders")
+      .then((response) => response.json())
+      .then((data: { tenders?: RelatedTender[]; source?: string }) => {
+        if (data.tenders) hydrateTenders(data.tenders);
+        if (data.source) setTenderSource(data.source);
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     const node = mapNode.current;
@@ -97,7 +108,7 @@ export function CreateMap() {
     try {
       await startUpload([file]);
     } catch {
-      setStatus("Kept the local photo — hosted upload can finish later.");
+      setStatus("Kept the local photo. Hosted upload can finish later.");
     }
   };
 
@@ -130,6 +141,7 @@ export function CreateMap() {
           {PRODUCT_NAME.toLowerCase()}
         </Link>
         <div className="map-top-actions">
+          <WebMcpStatus />
           <Link className="btn-quiet" href="/world">
             World
           </Link>
@@ -140,7 +152,10 @@ export function CreateMap() {
       </div>
       <form className="map-sheet" onSubmit={onSubmit}>
         <p className="kicker">File a voice</p>
-        <h2 style={{ margin: "0 0 8px", fontSize: 28 }}>Photo + area name</h2>
+        <h2 style={{ margin: "0 0 8px", fontSize: 28 }}>Photo and area name</h2>
+        <p className="muted" style={{ marginTop: 0 }}>
+          Drop a photo here, or let Codex fill this form with set_draft and file_voice.
+        </p>
         <label
           className="drop"
           onDragOver={(event) => event.preventDefault()}
@@ -164,7 +179,7 @@ export function CreateMap() {
         </label>
         <input
           className="field"
-          placeholder="Area name — HSR Layout, Bellandur, Whitefield"
+          placeholder="Area name, e.g. HSR Layout, Bellandur, Whitefield"
           value={state.draft.areaName}
           onChange={(event) => commands.setDraft({ areaName: event.target.value })}
           onBlur={onAreaBlur}
@@ -198,6 +213,16 @@ export function CreateMap() {
           Put it on record
         </button>
         {status ? <p className="muted">{status}</p> : null}
+        {state.activity.length > 0 ? (
+          <ul className="agent-log">
+            {state.activity.slice(0, 4).map((item) => (
+              <li key={`${item.at}-${item.tool}`}>
+                <b>{item.tool}</b>
+                <span>{item.summary}</span>
+              </li>
+            ))}
+          </ul>
+        ) : null}
       </form>
       {selected ? (
         <aside className="map-rail">
@@ -207,6 +232,10 @@ export function CreateMap() {
             {selected.ward?.name} · {selected.ward?.corporation}
           </p>
           <p>{selected.body}</p>
+          {selected.photos[0] ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={selected.photos[0].url} alt="" className="rail-photo" />
+          ) : null}
           <button type="button" className="btn-solid" onClick={() => commands.supportVoice(selected.id)}>
             Join this voice · {selected.supporters}
           </button>
@@ -222,18 +251,23 @@ export function CreateMap() {
             ))}
           </ul>
           <p className="kicker" style={{ marginTop: 22 }}>
-            Related tenders
+            Related records ({tenderSource})
           </p>
           {tenders.length === 0 ? (
-            <p className="muted">No matching public listing for this issue. That is the story.</p>
+            <p className="muted">No matching public listing for this issue.</p>
           ) : (
             tenders.map((tender) => (
               <article key={tender.refNo} className="voice-card" style={{ marginTop: 10 }}>
                 <p className="kicker">{tender.sector}</p>
                 <h3 style={{ fontSize: 16 }}>{tender.title}</h3>
                 <p className="muted">
-                  {tender.valueText} · closes {tender.closingDate}
+                  {tender.valueText} · {tender.closingDate}
                 </p>
+                {tender.detailUrl ? (
+                  <a className="muted" href={tender.detailUrl} target="_blank" rel="noreferrer">
+                    Open source
+                  </a>
+                ) : null}
               </article>
             ))
           )}

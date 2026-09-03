@@ -3,7 +3,7 @@ import { WorldPage } from "@/components/world-page";
 import { PRODUCT_NAME, PRODUCT_PROMISE } from "@/domain/product";
 
 export const metadata: Metadata = {
-  title: `${PRODUCT_NAME} — The city, on record`,
+  title: `${PRODUCT_NAME}: what is on the map`,
   description: PRODUCT_PROMISE,
 };
 

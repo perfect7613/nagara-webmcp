@@ -27,10 +27,10 @@ const mono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://nagara-webmcp.vercel.app"),
-  title: `${PRODUCT_NAME} — Bengaluru civic voices`,
+  title: `${PRODUCT_NAME}: Bengaluru civic voices`,
   description: PRODUCT_PROMISE,
   openGraph: {
-    title: `${PRODUCT_NAME} — Bengaluru civic voices`,
+    title: `${PRODUCT_NAME}: Bengaluru civic voices`,
     description: PRODUCT_PROMISE,
     images: ["/media/bengaluru-city.jpg"],
   },

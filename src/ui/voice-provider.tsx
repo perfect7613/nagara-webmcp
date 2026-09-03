@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
+import { createContext, useContext, useMemo, useRef, useState, type ReactNode } from "react";
 import type { CityState } from "@/domain/types";
 import { WebMcpBridge } from "@/adapters/webmcp/bridge";
 import { createVoiceCommands, emptyCity, loadCity, type VoiceCommands } from "@/modules/voice-command";
@@ -14,7 +14,19 @@ export function VoiceProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<CityState>(() =>
     typeof window === "undefined" ? emptyCity() : loadCity(),
   );
-  const commands = useMemo(() => createVoiceCommands(() => state, setState), [state]);
+  const stateRef = useRef(state);
+  stateRef.current = state;
+  const commands = useMemo(
+    () =>
+      createVoiceCommands(
+        () => stateRef.current,
+        (next) => {
+          stateRef.current = next;
+          setState(next);
+        },
+      ),
+    [],
+  );
 
   return (
     <VoiceContext.Provider value={{ state, commands }}>

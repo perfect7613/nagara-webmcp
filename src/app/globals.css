@@ -257,11 +257,73 @@ a { color: inherit; text-decoration: none; }
 .section-dark .lede { color: rgba(255,255,255,0.7); max-width: 640px; }
 .section-dark .kicker { color: #ff8aa0; }
 
-.site-foot {
-  padding: 48px 28px 64px;
-  text-align: center;
-  max-width: 640px;
-  margin: 0 auto;
+.webmcp-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0 0;
+  padding: 6px 10px;
+  border-radius: 99px;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.webmcp-chip i {
+  width: 8px;
+  height: 8px;
+  border-radius: 99px;
+  background: #ca8a04;
+}
+
+.webmcp-chip[data-status="ready"] i { background: #16a34a; }
+.webmcp-chip[data-status="supported"] i { background: #1d4ed8; }
+
+.prompt-box {
+  margin: 20px 0;
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fafafa;
+  font-size: 13px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.agent-log {
+  list-style: none;
+  margin: 14px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.agent-log li {
+  display: grid;
+  gap: 2px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.agent-log b {
+  font-family: var(--font-mono), "JetBrains Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--pin);
+}
+
+.rail-photo {
+  width: 100%;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin: 10px 0;
+}
+
+.map-top .webmcp-chip {
+  margin: 0;
 }
 
 .map-app {

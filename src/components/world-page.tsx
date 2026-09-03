@@ -2,24 +2,25 @@
 
 import Link from "next/link";
 import { CATEGORY_LABEL, LANDING_CATEGORIES } from "@/domain/categories";
-import { GITHUB_REPO, PRODUCT_NAME, PRODUCT_TAGLINE } from "@/domain/product";
+import { CODEX_PROMPT, GITHUB_REPO, LIVE_URL, PRODUCT_NAME, PRODUCT_TAGLINE } from "@/domain/product";
 import { useCity } from "@/ui/voice-provider";
+import { WebMcpStatus } from "@/components/webmcp-status";
 
 const STEPS = [
   {
     n: "01",
-    title: "Photograph what failed",
-    copy: "A flooded service road, a tanker queue, a lake inlet, an open UGD cut. The photo is the evidence.",
+    title: "Take a photo of what failed",
+    copy: "A flooded service road, a tanker queue, a lake inlet, or an open UGD cut. The photo is the evidence.",
   },
   {
     n: "02",
     title: "Name the area",
-    copy: "HSR, Bellandur, Whitefield. We resolve the GBA ward. You and ChatGPT look at the same pin.",
+    copy: "HSR, Bellandur, Whitefield. We match the GBA ward. You and the agent look at the same pin.",
   },
   {
     n: "03",
-    title: "Keep it on record",
-    copy: "The voice stays on this map with related public tenders, so a person and an agent share the same pin.",
+    title: "File it on this map",
+    copy: "The voice stays here with public stormwater, lake, and UGD records next to it.",
   },
 ];
 
@@ -38,7 +39,7 @@ export function WorldPage() {
       <header className="site-nav">
         <nav className="site-nav-links">
           <a href="#how">How it works</a>
-          <a href="#record">Pulse</a>
+          <a href="#agent">For agents</a>
           <Link href="/create">Map</Link>
         </nav>
         <Link href="/" className="wordmark">
@@ -56,15 +57,16 @@ export function WorldPage() {
 
       <section id="record" className="section">
         <p className="kicker live-kicker">
-          <i /> Live · Bengaluru
+          <i /> Live, Bengaluru
         </p>
         <div className="section-head">
-          <h1>The city, on record.</h1>
+          <h1>What is on the map</h1>
           <p>
-            {PRODUCT_NAME} is a shared map for people and WebMCP agents. Drop a photo and an area name. We pin the GBA
-            ward and attach related public tenders. Flooded streets and empty wells are one system — the first pins are
-            drains, lakes, tankers, and unfinished works.
+            {PRODUCT_NAME} is a shared Bengaluru map. A person drops a photo and an area name. A WebMCP agent can do the
+            same from Codex or ChatGPT. We match the GBA ward and pin the voice. Flooded streets and empty wells belong
+            on one map. The first pins are drains, lakes, tankers, and unfinished works.
           </p>
+          <WebMcpStatus />
         </div>
         <div className="pulse-grid">
           <article className="voice-card">
@@ -108,7 +110,7 @@ export function WorldPage() {
 
       <section id="how" className="section">
         <p className="kicker">How it works</p>
-        <h2>Three moves. One shared map.</h2>
+        <h2>How a voice gets on the map</h2>
         <ol className="steps">
           {STEPS.map((step) => (
             <li key={step.n}>
@@ -120,12 +122,23 @@ export function WorldPage() {
         </ol>
       </section>
 
+      <section id="agent" className="section">
+        <p className="kicker">Codex and ChatGPT</p>
+        <h2>Give the agent a photo and an area name</h2>
+        <p className="lede" style={{ color: "var(--muted)", maxWidth: 640 }}>
+          Open {LIVE_URL}/create in Codex or in ChatGPT&apos;s in-app browser. Attach the photo you took and name the
+          locality. The agent fills the form with set_draft, files with file_voice, and the pin shows up while you watch.
+        </p>
+        <pre className="prompt-box">{CODEX_PROMPT}</pre>
+        <p className="muted">Tools on this origin: get_workspace_state, attach_photo, set_draft, classify_issue, resolve_ward, file_voice, focus_voice, list_related_tenders, enrich_source.</p>
+      </section>
+
       <section className="section section-dark">
         <p className="kicker">Why WebMCP</p>
         <h2>{PRODUCT_TAGLINE}</h2>
         <p className="lede">
-          ChatGPT’s in-app browser registers tools on this origin. The agent resolves the ward, files the voice, and
-          attaches stormwater or lake tenders. The pin updates while you watch.
+          ChatGPT&apos;s in-app browser registers tools on this origin. The agent does not scrape the buttons. It calls
+          the same commands the form uses, so you can see the fields fill and the pin land.
         </p>
         <Link className="btn-on-dark" href="/create">
           Open the map

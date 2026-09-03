@@ -1,62 +1,72 @@
 [
   {
-    "refNo": "GBA/SWD/HSR/2026/118",
-    "title": "Desilting and robotic silt removal of stormwater drains, HSR Layout to Bellandur outfall",
+    "refNo": "TNM-2021-03-25",
+    "title": "BBMP Rs 175 crore stormwater drain revamp, KR Market to Bellandur",
     "sector": "Stormwater",
-    "valueText": "₹18.4 crore",
-    "location": "Bengaluru South — HSR / Bellandur",
-    "closingDate": "2026-09-22",
-    "detailUrl": "https://www.karnatakatenders.in/",
+    "valueText": "₹175 crore",
+    "location": "KR Market, HSR Layout, Bellandur Lake",
+    "closingDate": "reported 2021-03-25",
+    "detailUrl": "https://www.thenewsminute.com/karnataka/bengaluru-storm-water-drain-be-revamped-rs-175-cr-project-inaugurated-145913",
     "matchedCategory": "flooding"
   },
   {
-    "refNo": "ECC/WB/SWD/2026/044",
-    "title": "World Bank assisted SWD strengthening — Yamalur, Bellandur, Kaikondrahalli, Saulkere",
-    "sector": "Drainage",
-    "valueText": "₹42.0 crore",
-    "location": "Bengaluru East — Mahadevapura",
-    "closingDate": "2026-10-04",
-    "detailUrl": "https://www.karnatakatenders.in/",
+    "refNo": "OpenCity-SWD-maps",
+    "title": "Bengaluru stormwater drain maps (primary, secondary, tertiary)",
+    "sector": "Stormwater maps",
+    "valueText": "OpenCity dataset",
+    "location": "Bengaluru BBMP area, HSR, Bellandur, Koramangala",
+    "closingDate": "dataset",
+    "detailUrl": "https://data.opencity.in/dataset/bengaluru-stormwater-drains-maps",
     "matchedCategory": "flooding"
   },
   {
-    "refNo": "BDA/LAKE/BND/2026/07",
-    "title": "Completion of pending desilting and bund fencing — Bellandur Lake",
-    "sector": "Lakes",
-    "valueText": "₹26.1 crore",
-    "location": "Bellandur, Bengaluru East",
-    "closingDate": "2026-09-30",
-    "detailUrl": "https://www.karnatakatenders.in/",
-    "matchedCategory": "lakes"
-  },
-  {
-    "refNo": "BDA/LAKE/KAI/2026/12",
-    "title": "Lake development and wire fencing — Kaikondrahalli / Somasundarapalya",
-    "sector": "Lakes",
-    "valueText": "₹4.8 crore",
-    "location": "Kaikondrahalli, Bengaluru East",
-    "closingDate": "2026-09-18",
-    "detailUrl": "https://www.karnatakatenders.in/",
-    "matchedCategory": "lakes"
-  },
-  {
-    "refNo": "BWSSB/UGD/MG/2026/301",
-    "title": "Scientific restoration of roads after underground drainage cuts — central and south zones",
-    "sector": "UGD",
-    "valueText": "₹9.2 crore",
+    "refNo": "CAG-SWD-audit",
+    "title": "CAG performance audit of stormwater drains in Bengaluru",
+    "sector": "Audit",
+    "valueText": "CAG report",
     "location": "Bengaluru",
-    "closingDate": "2026-09-28",
-    "detailUrl": "https://www.karnatakatenders.in/",
-    "matchedCategory": "works"
+    "closingDate": "dataset",
+    "detailUrl": "https://data.opencity.in/dataset/cag-performance-audit-of-stormwater-drains-in-bengaluru",
+    "matchedCategory": "flooding"
   },
   {
-    "refNo": "BWSSB/CWSS-VI/2026/01",
-    "title": "Cauvery Water Supply Scheme Stage VI — distribution to 110 villages / CMC areas",
+    "refNo": "OpenCity-SWD-masterplan-2010",
+    "title": "Storm Water Drains Master Plan 2010, eight BBMP zones",
+    "sector": "Stormwater",
+    "valueText": "BBMP master plan",
+    "location": "Bengaluru, Bellandur, HSR Layout",
+    "closingDate": "2010",
+    "detailUrl": "https://data.opencity.in/dataset/bengaluru-stormwater-drains-master-plan-2010",
+    "matchedCategory": "flooding"
+  },
+  {
+    "refNo": "OpenCity-Bellandur",
+    "title": "Bellandur and Varthur lake data on OpenCity",
+    "sector": "Lakes",
+    "valueText": "OpenCity dataset",
+    "location": "Bellandur, Varthur, Kaikondrahalli",
+    "closingDate": "dataset",
+    "detailUrl": "https://data.opencity.in/dataset?q=bellandur+lake",
+    "matchedCategory": "lakes"
+  },
+  {
+    "refNo": "BWSSB-CWSS-VI",
+    "title": "Cauvery Water Supply Scheme Stage VI, 110 villages / CMC areas",
     "sector": "Water supply",
-    "valueText": "₹6,939 crore",
-    "location": "Greater Bengaluru Authority periphery",
-    "closingDate": "2026-11-12",
-    "detailUrl": "https://www.karnatakatenders.in/",
+    "valueText": "public scheme",
+    "location": "Whitefield, Greater Bengaluru periphery",
+    "closingDate": "ongoing",
+    "detailUrl": "https://data.opencity.in/dataset?q=cauvery+water+bengaluru",
     "matchedCategory": "water"
+  },
+  {
+    "refNo": "OpenCity-UGD",
+    "title": "Bengaluru underground drainage records on OpenCity",
+    "sector": "UGD",
+    "valueText": "OpenCity dataset",
+    "location": "Koramangala, Bengaluru South",
+    "closingDate": "dataset",
+    "detailUrl": "https://data.opencity.in/dataset?q=underground+drainage+bengaluru",
+    "matchedCategory": "works"
   }
 ]

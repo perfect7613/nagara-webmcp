@@ -49,6 +49,26 @@ describe("voices", () => {
     const supported = commands.supportVoice(id);
     expect(supported.ok).toBe(true);
   });
+
+  it("lets an agent fill the form then file a voice", () => {
+    let state = emptyCity();
+    const commands = createVoiceCommands(
+      () => state,
+      (next) => {
+        state = next;
+      },
+    );
+    commands.setDraft({
+      photoUrl: "https://example.com/bellandur.jpg",
+      areaName: "Bellandur",
+      title: "Sewage still enters the lake",
+      body: "The stormwater inlet on the bund is untreated.",
+      category: "lakes",
+    });
+    const filed = commands.fileVoice({ actor: "agent" });
+    expect(filed.ok).toBe(true);
+    expect(state.selectedVoiceId).toBeTruthy();
+  });
 });
 
 describe("tenders", () => {

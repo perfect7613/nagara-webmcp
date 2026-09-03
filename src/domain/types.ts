@@ -68,11 +68,19 @@ export interface VoiceDraft {
   lat?: number;
 }
 
+export interface AgentLog {
+  at: string;
+  tool: string;
+  summary: string;
+  actor: Actor;
+}
+
 export interface CityState {
   voices: Voice[];
   draft: VoiceDraft;
   selectedVoiceId: string | null;
   focusedVoiceId: string | null;
+  activity: AgentLog[];
   updatedAt: string;
 }
 
