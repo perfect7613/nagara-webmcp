@@ -1,0 +1,62 @@
+[
+  {
+    "refNo": "GBA/SWD/HSR/2026/118",
+    "title": "Desilting and robotic silt removal of stormwater drains, HSR Layout to Bellandur outfall",
+    "sector": "Stormwater",
+    "valueText": "₹18.4 crore",
+    "location": "Bengaluru South — HSR / Bellandur",
+    "closingDate": "2026-09-22",
+    "detailUrl": "https://www.karnatakatenders.in/",
+    "matchedCategory": "flooding"
+  },
+  {
+    "refNo": "ECC/WB/SWD/2026/044",
+    "title": "World Bank assisted SWD strengthening — Yamalur, Bellandur, Kaikondrahalli, Saulkere",
+    "sector": "Drainage",
+    "valueText": "₹42.0 crore",
+    "location": "Bengaluru East — Mahadevapura",
+    "closingDate": "2026-10-04",
+    "detailUrl": "https://www.karnatakatenders.in/",
+    "matchedCategory": "flooding"
+  },
+  {
+    "refNo": "BDA/LAKE/BND/2026/07",
+    "title": "Completion of pending desilting and bund fencing — Bellandur Lake",
+    "sector": "Lakes",
+    "valueText": "₹26.1 crore",
+    "location": "Bellandur, Bengaluru East",
+    "closingDate": "2026-09-30",
+    "detailUrl": "https://www.karnatakatenders.in/",
+    "matchedCategory": "lakes"
+  },
+  {
+    "refNo": "BDA/LAKE/KAI/2026/12",
+    "title": "Lake development and wire fencing — Kaikondrahalli / Somasundarapalya",
+    "sector": "Lakes",
+    "valueText": "₹4.8 crore",
+    "location": "Kaikondrahalli, Bengaluru East",
+    "closingDate": "2026-09-18",
+    "detailUrl": "https://www.karnatakatenders.in/",
+    "matchedCategory": "lakes"
+  },
+  {
+    "refNo": "BWSSB/UGD/MG/2026/301",
+    "title": "Scientific restoration of roads after underground drainage cuts — central and south zones",
+    "sector": "UGD",
+    "valueText": "₹9.2 crore",
+    "location": "Bengaluru",
+    "closingDate": "2026-09-28",
+    "detailUrl": "https://www.karnatakatenders.in/",
+    "matchedCategory": "works"
+  },
+  {
+    "refNo": "BWSSB/CWSS-VI/2026/01",
+    "title": "Cauvery Water Supply Scheme Stage VI — distribution to 110 villages / CMC areas",
+    "sector": "Water supply",
+    "valueText": "₹6,939 crore",
+    "location": "Greater Bengaluru Authority periphery",
+    "closingDate": "2026-11-12",
+    "detailUrl": "https://www.karnatakatenders.in/",
+    "matchedCategory": "water"
+  }
+]

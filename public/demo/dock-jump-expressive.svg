@@ -1,9 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" width="1200" height="800">
-  <rect width="1200" height="800" fill="#6f98ad"/>
-  <rect y="430" width="1200" height="370" fill="#234352"/>
-  <rect x="70" y="478" width="1060" height="26" fill="#d2bd96"/>
-  <circle cx="655" cy="286" r="50" fill="#f3d4b4"/>
-  <path d="M640 270 q18 8 28 -2" fill="none" stroke="#6a3a2c" stroke-width="4"/>
-  <rect x="628" y="334" width="52" height="96" fill="#e0c9a6"/>
-  <text x="60" y="70" fill="#102028" font-size="28" font-family="Georgia">dock jump · laugh</text>
-</svg>

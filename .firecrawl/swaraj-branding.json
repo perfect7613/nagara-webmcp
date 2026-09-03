@@ -1,0 +1,175 @@
+{
+  "branding": {
+    "colorScheme": "light",
+    "fonts": [
+      {
+        "family": "Figtree",
+        "role": "body"
+      },
+      {
+        "family": "Outfit",
+        "role": "heading"
+      },
+      {
+        "family": "JetBrains Mono",
+        "role": "monospace"
+      }
+    ],
+    "colors": {
+      "primary": "#EC324E",
+      "secondary": "#101828",
+      "accent": "#16A34A",
+      "background": "#FFFFFF",
+      "textPrimary": "#18181B",
+      "link": "#16A34A"
+    },
+    "typography": {
+      "fontFamilies": {
+        "primary": "Figtree",
+        "heading": "Outfit"
+      },
+      "fontStacks": {
+        "heading": [
+          "Outfit"
+        ],
+        "body": [
+          "Figtree"
+        ],
+        "paragraph": [
+          "Figtree"
+        ]
+      },
+      "fontSizes": {
+        "h1": "104px",
+        "h2": "56px",
+        "body": "19px"
+      }
+    },
+    "spacing": {
+      "baseUnit": 12,
+      "borderRadius": "2px"
+    },
+    "components": {
+      "buttonPrimary": {
+        "background": "#FFFFFF",
+        "textColor": "#101828",
+        "borderRadius": "12px",
+        "borderRadiusCorners": {
+          "topLeft": "12px",
+          "topRight": "12px",
+          "bottomRight": "12px",
+          "bottomLeft": "12px"
+        },
+        "shadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, lab(91.6229 -0.159115 -2.26791) 0px 0px 0px 1px, rgba(0, 0, 0, 0.1) 0px 1px 3px 0px, rgba(0, 0, 0, 0.1) 0px 1px 2px -1px"
+      },
+      "buttonSecondary": {
+        "background": "transparent",
+        "textColor": "#FFFFFF",
+        "borderColor": "#FFFFFF",
+        "borderRadius": "14px",
+        "borderRadiusCorners": {
+          "topLeft": "14px",
+          "topRight": "14px",
+          "bottomRight": "14px",
+          "bottomLeft": "14px"
+        },
+        "shadow": "rgba(255, 255, 255, 0.07) 0px 1px 0px 0px inset, rgba(0, 0, 0, 0.6) 0px 12px 30px -18px"
+      }
+    },
+    "images": {
+      "logo": "https://swarajapp.com/apple-touch-icon.png",
+      "favicon": "https://swarajapp.com/apple-touch-icon.png",
+      "ogImage": "https://swarajapp.com/apple-touch-icon.png",
+      "logoAlt": "Swaraj"
+    },
+    "__llm_logo_reasoning": {
+      "selectedIndex": 0,
+      "reasoning": "Selected #0 because it is visible, located in the header, and matches the brand name 'Swaraj'.",
+      "confidence": 0.9,
+      "source": "llm"
+    },
+    "__llm_button_reasoning": {
+      "primary": {
+        "index": 2,
+        "text": "Continue with Google",
+        "reasoning": "Button #2 ('Continue with Google') is likely the primary CTA due to its action-oriented text and prominent placement. It uses a light background which contrasts with the text, making it stand out."
+      },
+      "secondary": {
+        "index": 0,
+        "text": "GET IT ONGoogle Play",
+        "reasoning": "Button #0 ('GET IT ON Google Play') is selected as secondary due to its transparent background, making it less prominent than the primary button."
+      },
+      "confidence": 0.9
+    },
+    "personality": {
+      "tone": "modern",
+      "energy": "medium",
+      "targetAudience": "civic tech enthusiasts and news readers"
+    },
+    "designSystem": {
+      "framework": "tailwind",
+      "componentLibrary": ""
+    },
+    "confidence": {
+      "buttons": 0.9,
+      "colors": 0.95,
+      "overall": 0.925
+    },
+    "__llm_metadata": {
+      "logoSelection": {
+        "llmCalled": true,
+        "llmSucceeded": true,
+        "finalSource": "llm",
+        "rawLogoSelection": {
+          "selectedLogoIndex": 0,
+          "selectedLogoReasoning": "Selected #0 because it is visible, located in the header, and matches the brand name 'Swaraj'.",
+          "confidence": 0.9
+        }
+      },
+      "buttonClassification": {
+        "llmCalled": true,
+        "llmSucceeded": true
+      }
+    },
+    "brandName": "Swaraj",
+    "logo": "https://swarajapp.com/apple-touch-icon.png"
+  },
+  "metadata": {
+    "description": "Clean news. Real problems. No noise. A public map of civic problems and a daily fact-checked brief, built by citizens for citizens.",
+    "ogDescription": "Clean news. Real problems. No noise. A public map of civic problems and a daily fact-checked brief, built by citizens for citizens.",
+    "next-size-adjust": "",
+    "og:type": "website",
+    "theme-color": "#EC324E",
+    "twitter:card": "summary",
+    "language": "en",
+    "og:image:alt": "Swaraj",
+    "title": "Swaraj | News and Civic Tech Platform",
+    "og:image:height": "512",
+    "twitter:description": "Clean news. Real problems. No noise. A public map of civic problems and a daily fact-checked brief, built by citizens for citizens.",
+    "og:description": "Clean news. Real problems. No noise. A public map of civic problems and a daily fact-checked brief, built by citizens for citizens.",
+    "viewport": "width=device-width, initial-scale=1, viewport-fit=cover",
+    "ogImage": "https://swarajapp.com/apple-touch-icon.png",
+    "ogTitle": "Swaraj | News and Civic Tech Platform",
+    "og:image": "https://swarajapp.com/apple-touch-icon.png",
+    "og:image:width": "512",
+    "twitter:title": "Swaraj | News and Civic Tech Platform",
+    "og:title": "Swaraj | News and Civic Tech Platform",
+    "twitter:image": "https://swarajapp.com/apple-touch-icon.png",
+    "favicon": "https://swarajapp.com/apple-touch-icon.png",
+    "scrapeId": "01a0688a-6c2f-708b-b76d-f2085eaf5372",
+    "sourceURL": "https://swarajapp.com/create",
+    "url": "https://swarajapp.com/?next=%2Fcreate",
+    "statusCode": 200,
+    "contentType": "text/html; charset=utf-8",
+    "timezone": "America/New_York",
+    "proxyUsed": "basic",
+    "indexId": "8a5cbf12-63fa-4b5b-96f3-18b1667548db",
+    "creditsUsed": 1,
+    "concurrencyLimited": false
+  },
+  "images": [
+    "https://swarajapp.com/_next/image?url=%2Fswaraj-app-mockup-3.png&w=3840&q=75",
+    "https://swarajapp.com/%23n",
+    "https://i.ytimg.com/vi/vapkU1N4X2I/maxresdefault.jpg"
+  ]
+}

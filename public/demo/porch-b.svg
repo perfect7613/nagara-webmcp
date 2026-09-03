@@ -1,9 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" width="1200" height="900">
-  <rect width="1200" height="900" fill="#d3c2a4"/>
-  <rect x="80" y="180" width="1040" height="620" fill="#7d6248"/>
-  <rect x="130" y="230" width="940" height="90" fill="#f2eadb"/>
-  <rect x="80" y="760" width="200" height="80" fill="#4d6a4a"/>
-  <circle cx="500" cy="430" r="42" fill="#ddd4c4"/>
-  <circle cx="680" cy="430" r="38" fill="#d1c6b2"/>
-  <text x="60" y="80" fill="#3a2a1c" font-size="28" font-family="Georgia">porch · wider</text>
-</svg>

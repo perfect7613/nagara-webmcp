@@ -1,9 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1300" width="1000" height="1300">
-  <rect width="1000" height="1300" fill="#9eb0b8"/>
-  <rect x="120" y="180" width="760" height="920" fill="#6d4a4a"/>
-  <rect x="160" y="240" width="680" height="160" fill="#d7dde0"/>
-  <rect x="180" y="460" width="200" height="260" fill="#c27a4a"/>
-  <rect x="420" y="460" width="200" height="260" fill="#5f8a72"/>
-  <rect x="660" y="460" width="140" height="260" fill="#3d2a28"/>
-  <text x="60" y="90" fill="#1c2428" font-size="28" font-family="Georgia">market · cool</text>
-</svg>

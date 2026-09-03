@@ -1,31 +1,28 @@
-# Keepers
+# Nagara
 
-A collaborative photo workspace where people show intent through **choices, drawings, notes, and layout**, and a **WebMCP** agent turns those signals into organized, edited, export-ready photos.
+A Bengaluru civic-voice map. A person drops a **photo** and an **area name**. The page resolves the **GBA ward**, pins a **Voice**, and shows **related public tenders** (stormwater, lakes, UGD). ChatGPT uses **WebMCP** on the same map.
 
-The canvas is the shared context. This is not an AI photo editor with a chat panel.
-
-> Working title: Keepers. Rename in `src/domain/product.ts` if you want a different public name (Devpost asks humans to name the project).
+Open [http://localhost:3000](http://localhost:3000). Product at `/world`. File a voice at `/create`.
 
 ## Why WebMCP
 
-Without WebMCP, an agent has to scrape the DOM, guess which scribble belongs to which photo, and click around tldraw. Keepers registers intent-level tools on the page:
+The human and the agent share one city. Tools are registered on this origin:
 
-```js
-document.modelContext.registerTool({
-  name: "get_spatial_intent",
-  description: "Resolve drawings and selection into which photo, region, and notes to act on.",
-  inputSchema: { type: "object", properties: {}, additionalProperties: false },
-  execute: async () => { /* same workspace commands as the UI */ },
-});
-```
+- `get_workspace_state`
+- `resolve_ward`
+- `list_voices` / `get_voice`
+- `file_voice` / `classify_issue`
+- `support_voice` / `focus_voice`
+- `list_related_tenders` / `enrich_source`
 
-The human and the agent read and write the **same** workspace. Tool availability changes with state (open group → preference tools; pointed photo → edit tools) using abortable registrations.
+Suggested prompts (none are potholes):
 
-## What people and agents do together
+- Photo of stormwater overflowing into houses in HSR Layout after rain from Madiwala/BTM toward Bellandur. Resolve the ward, file a Flooding voice, list related SWD tenders.
+- Street waterlogged at Kaikondrahalli. Classify as Flooding, file it, check lake/drain tenders.
+- This Bellandur bund still takes sewage from stormwater drains. File a Lakes voice.
+- BWSSB cut this freshly laid stretch for UGD and left it open. File a Works voice.
 
-1. **Choose** — pick the expressive burst frame over the sharpest one. The preference profile updates in plain language.
-2. **Point** — circle the cooler on the lakeside photo. `get_spatial_intent` returns a target and mask, not tldraw JSON.
-3. **Create** — `edit_image` starts a job, a ghost variant appears, provenance is visible, the original is never overwritten.
+Judges: ChatGPT in-app browser, or Chrome 149+ with `chrome://flags/#enable-webmcp-testing`.
 
 ## Run locally
 
@@ -36,51 +33,22 @@ npm test
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
-
-### Environment
+Open [http://localhost:3000](http://localhost:3000). Product at `/world`. File a voice at `/create`.
 
 | Variable | Required | Purpose |
 |---|---|---|
-| `UPLOADTHING_TOKEN` | No | Direct uploads for originals / derivatives |
-| `HF_TOKEN` | No | Hugging Face Inference Providers for pixel edits |
-| `HF_EDIT_MODEL` / `HF_EDIT_PROVIDER` | No | Override the instruct-edit model |
-| `NEXT_PUBLIC_ALLOW_DEMO_FALLBACK` | Defaults on | Labeled local preview when no HF token |
+| `UPLOADTHING_TOKEN` | No | Evidence photo hosting |
+| `FIRECRAWL_API_KEY` | No | Allowlisted enrich; otherwise labeled stub JSON |
 
-The tray starts empty. Drop photos to upload them through UploadThing (or keep them locally if the token is missing). **Load demo** in the workspace fills the prepared July weekend collection for judges. Pixel edits without `HF_TOKEN` use a **labeled local preview**, not a silent fake model.
+## Design
 
-## Test WebMCP
+Visual language from a Firecrawl design-clone of [swarajapp.com](https://swarajapp.com/) — see [`DESIGN.md`](DESIGN.md). `/` is a Bengaluru aerial hero. Product copy lives on `/world`. Original brand. No Swaraj logos or slogans.
 
-Judges should use **ChatGPT’s in-app browser** (site tools on by default) or **Chrome 149+** with `chrome://flags/#enable-webmcp-testing`.
+## Data
 
-Suggested prompts:
-
-- “Read the workspace, then surface only the groups that need a taste decision.”
-- “I prefer the laughing dock-jump over the sharpest frame. Record that and apply it where you’re confident.”
-- “Place the keepers on the canvas. I circled the cooler — remove it.”
-- “What is the spatial intent of my drawing?”
-
-You should see `get_workspace_state`, `record_preference`, `get_spatial_intent`, and `edit_image` in the browser’s site-tool list. Tools are registered on the **top-level page** (ChatGPT does not discover iframe tools).
-
-## Stack
-
-- Next.js App Router + React
-- Quickdraw canvas ([MIT infinite-canvas SDK](https://github.com/quickdrawjs/quickdraw))
-- WebMCP via `document.modelContext.registerTool` (`use-webmcp-tool`)
-- UploadThing for blobs
-- Hugging Face Inference Providers behind an `ImageProvider` interface
-- Catalog store seam (localStorage adapter now; Convex can be a second adapter)
-
-## Architecture
-
-See `CONTEXT.md` for domain language and `docs/PRD.md` for the product requirements.
-
-Deep modules:
-
-- **Workspace commands** — the only mutation path for UI and agents
-- **Spatial intent** — drawings → target photo + region + mask
-- **Preference profile** — comparisons → interpretable weights
-- **WebMCP registry** — app state → which tools exist
+- Seeded wards are locality aliases for the demo.
+- `public/data/tenders-sample.json` is mixed SWD/lake/UGD/water rows from a public listing style.
+- Aerial film: Pexels, Anil Sharma.
 
 ## License
 
