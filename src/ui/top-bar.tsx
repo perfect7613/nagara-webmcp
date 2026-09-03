@@ -5,7 +5,6 @@ import {
   Download,
   PanelLeft,
   PanelRight,
-  RotateCcw,
   Radio,
   Trash2,
 } from "lucide-react";
@@ -18,7 +17,6 @@ export function TopBar({
   dockOpen,
   onToggleDock,
   onExport,
-  onLoadDemo,
   onClear,
 }: {
   name: string;
@@ -26,7 +24,6 @@ export function TopBar({
   dockOpen: boolean;
   onToggleDock: () => void;
   onExport: () => void;
-  onLoadDemo: () => void;
   onClear: () => void;
 }) {
   const { open, setOpen } = useSidebar();
@@ -56,10 +53,6 @@ export function TopBar({
           <Radio className="h-3.5 w-3.5" aria-hidden />
           {webmcpReady ? "WebMCP live" : "WebMCP off"}
         </span>
-        <button type="button" className="ghost" onClick={onLoadDemo}>
-          <RotateCcw className="h-3.5 w-3.5" aria-hidden />
-          Demo
-        </button>
         <button type="button" className="ghost" onClick={onClear}>
           <Trash2 className="h-3.5 w-3.5" aria-hidden />
           Clear

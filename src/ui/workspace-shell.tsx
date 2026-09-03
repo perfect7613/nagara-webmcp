@@ -17,7 +17,6 @@ import { useIngestPhotos } from "@/ui/use-ingest-photos";
 import { VariantRail } from "@/ui/variant-rail";
 import {
   clearWorkspaceCatalog,
-  loadDemoCatalog,
   useWorkspace,
 } from "@/ui/workspace-provider";
 
@@ -147,7 +146,6 @@ export function WorkspaceShell() {
               a.download = `${catalog.name.replace(/\s+/g, "-").toLowerCase()}.png`;
               a.click();
             }}
-            onLoadDemo={loadDemoCatalog}
             onClear={clearWorkspaceCatalog}
           />
           {trayOpen ? <PhotoTray /> : null}
