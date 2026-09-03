@@ -21,23 +21,15 @@ import {
 } from "@/ui/workspace-provider";
 
 const TLDRAW_COMPONENTS: TLComponents = {
+  // Hide chrome we replace with our own UI
   SharePanel: null,
-  MenuPanel: null,
   HelpMenu: null,
   Minimap: null,
-  TopPanel: null,
-  PageMenu: null,
-  MainMenu: null,
   StylePanel: null,
   NavigationPanel: null,
-  ActionsMenu: null,
-  ZoomMenu: null,
-  QuickActions: null,
-  HelperButtons: null,
   DebugPanel: null,
   DebugMenu: null,
-  ImageToolbar: null,
-  VideoToolbar: null,
+  // Hide multi-user chrome (single-user app)
   CursorChatBubble: null,
   FollowingIndicator: null,
   PeopleMenu: null,
@@ -55,7 +47,6 @@ export function WorkspaceShell() {
   const [trayOpen, setTrayOpen] = useState(false);
   const [dockOpen, setDockOpen] = useState(false);
   const [graphOpen, setGraphOpen] = useState(false);
-  const [canvasReady, setCanvasReady] = useState(false);
   const hostRef = useRef<HTMLElement>(null);
   const canvasView = useCanvasView(editor);
   const pageHasImages =
@@ -73,18 +64,6 @@ export function WorkspaceShell() {
     }
   }, []);
 
-  useEffect(() => {
-    const node = hostRef.current;
-    if (!node) return;
-    const measure = () => {
-      const box = node.getBoundingClientRect();
-      if (box.width > 32 && box.height > 32) setCanvasReady(true);
-    };
-    measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, []);
 
   useEffect(() => {
     commands.syncCanvas(canvasView);
@@ -116,21 +95,19 @@ export function WorkspaceShell() {
               </p>
             </div>
           ) : null}
-          {canvasReady ? (
-            <Tldraw
-              persistenceKey={`keepers-board-${catalog.workspaceId}`}
-              autoFocus={false}
-              components={TLDRAW_COMPONENTS}
-              overrides={TLDRAW_OVERRIDES}
-              onMount={(next: Editor) => {
-                setEditor(next);
-                next.user.updateUserPreferences({ colorScheme: "light" });
-                const supported =
-                  typeof document.modelContext?.registerTool === "function";
-                setWebmcpReady(supported);
-              }}
-            />
-          ) : null}
+          <Tldraw
+            persistenceKey={`keepers-board-${catalog.workspaceId}`}
+            autoFocus={false}
+            components={TLDRAW_COMPONENTS}
+            overrides={TLDRAW_OVERRIDES}
+            onMount={(next: Editor) => {
+              setEditor(next);
+              next.user.updateUserPreferences({ colorScheme: "light" });
+              const supported =
+                typeof document.modelContext?.registerTool === "function";
+              setWebmcpReady(supported);
+            }}
+          />
         </section>
         <div className="float-layer">
           <TopBar
