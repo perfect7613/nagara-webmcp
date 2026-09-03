@@ -48,6 +48,10 @@ export function CanvasActions({
     (job) => job.status === "running" || job.status === "queued",
   );
 
+  useEffect(() => {
+    if (!showSelection) setIsolateOpen(false);
+  }, [showSelection]);
+
   void epoch;
 
   return (

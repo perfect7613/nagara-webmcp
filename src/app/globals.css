@@ -143,9 +143,13 @@ body {
 }
 
 .workspace.is-kanvas .tlui-layout__bottom__main {
-  padding-left: 340px;
+  padding-left: 16px;
   padding-right: 16px;
   box-sizing: border-box;
+}
+
+.workspace.is-kanvas:has(.canvas-chrome) .tlui-layout__bottom__main {
+  padding-left: 236px;
 }
 
 .workspace.is-kanvas:has(.right-islands) .tlui-layout__bottom__main {
@@ -221,11 +225,11 @@ body {
   position: absolute;
   top: 76px;
   left: 16px;
-  bottom: 168px;
+  bottom: auto;
   z-index: 21;
   width: 320px;
   height: auto;
-  max-height: none;
+  max-height: calc(100dvh - 260px);
   overflow: auto;
   border: 1px solid rgba(244, 234, 214, 0.14);
   background: color-mix(in srgb, var(--tray) 92%, transparent);
@@ -236,12 +240,13 @@ body {
   position: absolute;
   top: 76px;
   right: 16px;
-  bottom: 88px;
+  bottom: auto;
   z-index: 21;
   display: flex;
   flex-direction: column;
   gap: 12px;
   width: 300px;
+  max-height: calc(100dvh - 176px);
   pointer-events: none;
 }
 
@@ -249,11 +254,12 @@ body {
   pointer-events: auto;
   min-height: 0;
   overflow: auto;
-  flex: 1 1 50%;
+  flex: 0 1 auto;
+  max-height: calc((100dvh - 188px) / 2);
 }
 
 .right-islands > :only-child {
-  flex: 1 1 auto;
+  max-height: calc(100dvh - 176px);
 }
 
 .workspace.is-kanvas .dock,
@@ -912,7 +918,7 @@ button {
   align-items: stretch;
   gap: 12px;
   height: auto;
-  min-height: 220px;
+  min-height: 0;
   padding: 12px;
   border-top: 0;
   background: transparent;
@@ -1013,7 +1019,7 @@ button {
   }
   .workspace.is-kanvas .tray-shell.is-open {
     width: min(320px, calc(100% - 24px));
-    bottom: 168px;
+    max-height: calc(100dvh - 260px);
   }
   .workspace.is-kanvas .right-islands {
     left: 12px;
@@ -1021,15 +1027,10 @@ button {
     top: auto;
     bottom: 196px;
     width: auto;
-    max-height: 140px;
-  }
-  .workspace.is-kanvas:has(.right-islands) .canvas-chrome {
-    bottom: 348px;
-  }
-  .workspace.is-kanvas:has(.right-islands) .tray-shell {
-    bottom: 428px;
+    max-height: 160px;
   }
   .workspace.is-kanvas .tlui-layout__bottom__main,
+  .workspace.is-kanvas:has(.canvas-chrome) .tlui-layout__bottom__main,
   .workspace.is-kanvas:has(.right-islands) .tlui-layout__bottom__main {
     padding-left: 12px;
     padding-right: 12px;
@@ -1041,10 +1042,6 @@ button {
   .verbs {
     display: none;
   }
-}
-
-body:has(.workspace) nextjs-portal {
-  display: none;
 }
 
 .sr-only {
