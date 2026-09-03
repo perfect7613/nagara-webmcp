@@ -56,10 +56,10 @@ function RegisteredTool({
   catalog: Catalog;
   spatialIntent: SpatialIntent;
 }) {
-  const maskPng =
-    spatialIntent.kind === "clear" && spatialIntent.mask
-      ? maskToPngDataUrl(spatialIntent.mask)
-      : undefined;
+  const maskPng = useMemo(() => {
+    if (spatialIntent.kind !== "clear" || !spatialIntent.mask) return undefined;
+    return maskToPngDataUrl(spatialIntent.mask);
+  }, [spatialIntent]);
 
   const { supported, registered } = useWebMCP({
     name: tool.name,

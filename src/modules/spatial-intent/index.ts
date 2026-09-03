@@ -128,12 +128,23 @@ export function boxCenter(box: Box): Point {
   return { x: box.x + box.w / 2, y: box.y + box.h / 2 };
 }
 
+export function inflateBox(box: Box, pad = 8): Box {
+  return {
+    x: box.x - pad,
+    y: box.y - pad,
+    w: Math.max(pad * 2, box.w + pad * 2),
+    h: Math.max(pad * 2, box.h + pad * 2),
+  };
+}
+
 export function boxOverlap(a: Box, b: Box): number {
-  const x = Math.max(0, Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x));
-  const y = Math.max(0, Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y));
+  const left = inflateBox(a);
+  const x = Math.max(0, Math.min(left.x + left.w, b.x + b.w) - Math.max(left.x, b.x));
+  const y = Math.max(0, Math.min(left.y + left.h, b.y + b.h) - Math.max(left.y, b.y));
   const area = x * y;
   if (area <= 0) return 0;
-  return area / Math.max(1, Math.min(a.w * a.h, b.w * b.h));
+  const denom = Math.max(1, Math.min(left.w * left.h, b.w * b.h));
+  return area / denom;
 }
 
 export function imagePageBox(image: CanvasImage): Box {
@@ -251,6 +262,14 @@ export function resolveSpatialIntent(view: CanvasView): SpatialIntent {
     };
   }
 
+  if (targeting.length === 0 && selectedImages.length > 1) {
+    return {
+      kind: "ambiguous",
+      candidates: selectedImages.map((image) => toTarget(image, 1)),
+      reason: "Several photos are selected. Select one photo, or draw on the one to edit.",
+    };
+  }
+
   if (targeting.length === 0 && selectedImages.length === 0) {
     if (notes.length > 0) {
       return {
@@ -310,12 +329,19 @@ function buildClear(
   annotations: CanvasAnnotation[],
   notes: string[],
 ): SpatialIntent {
-  const targeting = annotations.filter((item) => item.kind !== "note");
+  const pageBox = imagePageBox(image);
+  const targeting = annotations.filter(
+    (item) => item.kind !== "note" && boxOverlap(item.pageBounds, pageBox) > 0.02,
+  );
   const bounds = targeting.map((item) => item.pageBounds);
   const region = bounds.length
     ? regionFromPageBoxes(image, bounds)
     : undefined;
 
+  const scale = Math.max(
+    image.sourceWidth / Math.max(1, image.width),
+    image.sourceHeight / Math.max(1, image.height),
+  );
   const scribblePoints = targeting
     .filter((item) => item.kind === "scribble" || item.kind === "sketch")
     .flatMap((item) => item.pagePoints ?? [])
@@ -323,10 +349,14 @@ function buildClear(
 
   const mask =
     scribblePoints.length > 1
-      ? rasterizeScribble(scribblePoints, {
-          width: image.sourceWidth,
-          height: image.sourceHeight,
-        })
+      ? rasterizeScribble(
+          scribblePoints,
+          {
+            width: image.sourceWidth,
+            height: image.sourceHeight,
+          },
+          Math.max(8, 14 * scale),
+        )
       : region
         ? rasterizeBox(region, {
             width: image.sourceWidth,
@@ -347,7 +377,9 @@ function buildClear(
 function regionFromPageBoxes(image: CanvasImage, boxes: Box[]): NormalizedRegion {
   const points = boxes.flatMap((box) => [
     pagePointToSource(image, { x: box.x, y: box.y }),
+    pagePointToSource(image, { x: box.x + box.w, y: box.y }),
     pagePointToSource(image, { x: box.x + box.w, y: box.y + box.h }),
+    pagePointToSource(image, { x: box.x, y: box.y + box.h }),
   ]);
   const xs = points.map((p) => p.x);
   const ys = points.map((p) => p.y);

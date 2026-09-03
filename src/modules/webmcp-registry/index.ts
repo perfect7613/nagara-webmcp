@@ -320,15 +320,14 @@ export function toolsForState(snapshot: WorkspaceSnapshot): ToolDescriptor[] {
       case "always":
         return true;
       case "when_group_open":
-        return Boolean(snapshot.selection.openGroupId) || snapshot.groups.length > 0;
+        return Boolean(snapshot.selection.openGroupId);
       case "when_image_selected":
         return (
           snapshot.selection.placementIds.length > 0 ||
-          snapshot.selection.assetIds.length > 0 ||
-          snapshot.placements.length > 0
+          snapshot.selection.shapeIds.length > 0
         );
       case "when_shapes_selected":
-        return snapshot.selection.shapeIds.length > 1 || snapshot.placements.length > 1;
+        return snapshot.selection.shapeIds.length >= 1 || snapshot.placements.length >= 1;
       case "when_exportable":
         return snapshot.placements.length > 0;
       case "when_consent":
@@ -430,22 +429,40 @@ export function executeTool(
         groupIds: needs.map((item) => item.id),
       });
     }
-    case "record_preference":
+    case "record_preference": {
+      const preferredAssetId = str(args.preferredAssetId);
+      if (!preferredAssetId) {
+        return { ok: false, summary: "preferredAssetId is required.", stateChanges: [] };
+      }
       return ctx.commands.recordPreference({
         actor,
-        preferredAssetId: String(args.preferredAssetId),
+        preferredAssetId,
         groupId: str(args.groupId),
       });
-    case "apply_preferences":
-      return ctx.commands.applyPreferences({
-        actor,
-        minConfidence: typeof args.minConfidence === "number" ? args.minConfidence : 0.7,
-      });
-    case "archive_photos":
-      return ctx.commands.archivePhotos(
-        Array.isArray(args.assetIds) ? args.assetIds.map(String) : ctx.catalog.selection.assetIds,
-        actor,
-      );
+    }
+    case "apply_preferences": {
+      const min =
+        typeof args.minConfidence === "number" &&
+        Number.isFinite(args.minConfidence) &&
+        args.minConfidence >= 0 &&
+        args.minConfidence <= 1
+          ? args.minConfidence
+          : 0.7;
+      return ctx.commands.applyPreferences({ actor, minConfidence: min });
+    }
+    case "archive_photos": {
+      const ids = Array.isArray(args.assetIds)
+        ? args.assetIds.map(String)
+        : ctx.catalog.selection.assetIds;
+      if (ids.length === 0) {
+        return {
+          ok: false,
+          summary: "Pass assetIds, or select photos in the tray first.",
+          stateChanges: [],
+        };
+      }
+      return ctx.commands.archivePhotos(ids, actor);
+    }
     case "restore_photos":
       return ctx.commands.restorePhotos(Array.isArray(args.assetIds) ? args.assetIds.map(String) : [], actor);
     case "get_spatial_intent":
@@ -461,8 +478,11 @@ export function executeTool(
         actor,
         layout: args.layout as LayoutKind,
       });
-    case "create_canvas_content":
-      return ctx.commands.createCanvasContent({ actor, note: String(args.note) });
+    case "create_canvas_content": {
+      const note = str(args.note);
+      if (!note) return { ok: false, summary: "A note string is required.", stateChanges: [] };
+      return ctx.commands.createCanvasContent({ actor, note });
+    }
     case "edit_image": {
       if (ctx.spatialIntent.kind === "ambiguous") {
         return {
@@ -485,24 +505,43 @@ export function executeTool(
         idempotencyKey: str(args.idempotencyKey),
       });
     }
-    case "enhance_images":
+    case "enhance_images": {
+      if (ctx.spatialIntent.kind === "ambiguous") {
+        return {
+          ok: false,
+          summary: ctx.spatialIntent.reason,
+          clarification: ctx.spatialIntent.reason,
+          stateChanges: [],
+        };
+      }
+      if (ctx.spatialIntent.kind === "none") {
+        return { ok: false, summary: ctx.spatialIntent.reason, stateChanges: [] };
+      }
       return ctx.commands.startImageJob({
         actor,
         operation: "enhance",
         instruction: str(args.instruction) ?? "Enhance: cleaner, consistent, natural.",
+        versionId: ctx.spatialIntent.target.versionId,
+        placementId: ctx.spatialIntent.target.placementId,
       });
+    }
     case "accept_variant":
       return ctx.commands.acceptVariant({
         actor,
         versionId: str(args.versionId),
         placementId: str(args.placementId),
       });
-    case "revert_placement":
-      return ctx.commands.revertPlacement(String(args.placementId), actor);
+    case "revert_placement": {
+      const placementId = str(args.placementId);
+      if (!placementId) {
+        return { ok: false, summary: "placementId is required.", stateChanges: [] };
+      }
+      return ctx.commands.revertPlacement(placementId, actor);
+    }
     case "get_export_options":
-      return okData("Export options.", {
-        targets: ["active photo version", "selected photos", "canvas frame", "complete canvas"],
-        formats: ["png", "jpeg", "webp", "svg"],
+      return okData("Export options. The person downloads from the Export button so the file picker stays in their control.", {
+        targets: ["canvas", "frame", "selection"],
+        formats: ["png", "jpeg", "webp"],
       });
     case "generate_image":
       if (!ctx.catalog.consent.externalProvider) {
@@ -518,9 +557,17 @@ export function executeTool(
         instruction: String(args.instruction),
       });
     case "prepare_export":
-      return okData("Use the Export control in the top bar to download the current canvas PNG.", {
-        hint: "Canvas export is human-visible in the top bar so the file picker stays in the person's control.",
-      });
+      return {
+        ok: false,
+        summary:
+          "Ask the human to press Export in the top bar. Keepers keeps the file picker in the person's control.",
+        stateChanges: [],
+        data: {
+          hint: "Canvas export is human-visible in the top bar.",
+          target: str(args.target) ?? "canvas",
+          format: str(args.format) ?? "png",
+        },
+      };
     default:
       return { ok: false, summary: `Unknown tool: ${name}`, stateChanges: [] };
   }

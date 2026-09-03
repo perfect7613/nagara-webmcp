@@ -82,6 +82,43 @@ describe("spatial intent resolver", () => {
     expect(intent.kind).toBe("ambiguous");
   });
 
+  it("treats a zero-height scribble as overlapping a photo", () => {
+    const intent = resolveSpatialIntent(
+      view({
+        annotations: [
+          {
+            id: "ann_line",
+            kind: "scribble",
+            selected: true,
+            pageBounds: { x: 180, y: 200, w: 80, h: 0 },
+            pagePoints: [
+              { x: 180, y: 200 },
+              { x: 260, y: 200 },
+            ],
+          },
+        ],
+      }),
+    );
+    expect(intent.kind).toBe("clear");
+  });
+
+  it("asks for clarification when several photos are selected and nothing is drawn", () => {
+    const second = {
+      ...image,
+      placementId: "plc_2",
+      assetId: "asset_other",
+      shapeId: "shape_img_2",
+      pageTransform: { a: 1, b: 0, c: 0, d: 1, e: 600, f: 80 },
+    };
+    const intent = resolveSpatialIntent(
+      view({
+        images: [image, second],
+        selectedShapeIds: ["shape_img", "shape_img_2"],
+      }),
+    );
+    expect(intent.kind).toBe("ambiguous");
+  });
+
   it("rasterizes a scribble into a non-empty mask", () => {
     const mask = rasterizeScribble(
       [
