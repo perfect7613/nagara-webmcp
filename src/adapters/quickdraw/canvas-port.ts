@@ -20,6 +20,7 @@ export function createCanvasPort(getEditor: () => Editor | null): CanvasPort {
       const editor = must(getEditor());
       const shapeIds: string[] = [];
       const viewport = editor.viewportPageBounds();
+      editor.store.transact(() => {
       drafts.forEach((draft, index) => {
         const beside = resolveBeside(editor, draft);
         const besideBox = beside ? pageBounds(beside) : undefined;
@@ -31,34 +32,33 @@ export function createCanvasPort(getEditor: () => Editor | null): CanvasPort {
         const point = placementPoint(editor, index, size, besideBox, viewport);
         const assetId = newId("asset");
         const shapeId = newId("shape");
-        editor.store.transact(() => {
-          editor.store.put({
-            id: assetId,
-            typeName: "asset",
-            src: draft.src,
-            w: draft.width,
-            h: draft.height,
-          });
-          editor.store.put({
-            id: shapeId,
-            typeName: "shape",
-            type: "image",
-            x: point.x,
-            y: point.y,
-            rot: 0,
-            z: editor.store.maxZ() + 1,
-            props: {
-              w: size.w,
-              h: size.h,
-              assetId,
-              placementId: draft.placementId,
-              keepersAssetId: draft.assetId,
-              versionId: draft.versionId,
-              ghost: draft.ghost ?? false,
-            },
-          });
+        editor.store.put({
+          id: assetId,
+          typeName: "asset",
+          src: draft.src,
+          w: draft.width,
+          h: draft.height,
+        });
+        editor.store.put({
+          id: shapeId,
+          typeName: "shape",
+          type: "image",
+          x: point.x,
+          y: point.y,
+          rot: 0,
+          z: editor.store.maxZ() + 1,
+          props: {
+            w: size.w,
+            h: size.h,
+            assetId,
+            placementId: draft.placementId,
+            keepersAssetId: draft.assetId,
+            versionId: draft.versionId,
+            ghost: draft.ghost ?? false,
+          },
         });
         shapeIds.push(shapeId);
+      });
       });
       return { shapeIds };
     },

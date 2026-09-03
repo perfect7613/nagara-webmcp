@@ -16,7 +16,7 @@ export function PhotoIngest() {
         multiple
         accept="image/*"
         label={isUploading ? "Uploading…" : "Add photos"}
-        hint="Uploads through UploadThing. Local copies stay if the upload fails."
+        hint="Photos land on the table immediately. Upload continues in the background."
         onChange={async (files) => {
           await ingestFiles(files);
           setEpoch((value) => value + 1);

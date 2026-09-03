@@ -80,11 +80,14 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   );
 
   useEffect(() => {
-    try {
-      localStorage.setItem(CATALOG_KEY, JSON.stringify(catalog));
-    } catch {
-      /* quota */
-    }
+    const timer = window.setTimeout(() => {
+      try {
+        localStorage.setItem(CATALOG_KEY, JSON.stringify(catalog));
+      } catch {
+        /* quota */
+      }
+    }, 250);
+    return () => window.clearTimeout(timer);
   }, [catalog]);
 
   const setEditor = useCallback((next: Editor | null) => {

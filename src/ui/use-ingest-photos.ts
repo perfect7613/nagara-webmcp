@@ -1,11 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { startTransition, useCallback, useState } from "react";
 import { useUploadThing } from "@/adapters/uploadthing/client";
 import { useWorkspace } from "@/ui/workspace-provider";
 
-function readImage(file: File) {
+async function readImage(file: File) {
   const src = URL.createObjectURL(file);
+  if (typeof createImageBitmap === "function") {
+    try {
+      const bitmap = await createImageBitmap(file);
+      const width = bitmap.width || 1200;
+      const height = bitmap.height || 800;
+      bitmap.close();
+      return { src, width, height };
+    } catch {
+      /* fall through to HTMLImageElement */
+    }
+  }
   return new Promise<{ src: string; width: number; height: number }>((resolve, reject) => {
     const image = new Image();
     image.onload = () =>
@@ -24,58 +35,62 @@ export function useIngestPhotos() {
     },
   });
 
-  async function ingestFiles(files: File[], place = false) {
-    const images = files.filter((file) => file.type.startsWith("image/"));
-    if (images.length === 0) {
-      setStatus("Those files are not images.");
-      return { ok: false as const, summary: "Those files are not images." };
-    }
-    setStatus(isUploading ? "Uploading…" : "Reading photos…");
-    const local = await Promise.all(
-      images.map(async (file) => {
-        const meta = await readImage(file);
-        return { file, ...meta, mimeType: file.type, name: file.name };
-      }),
-    );
-    let remote: Array<{ url: string; key: string; name: string }> = [];
-    try {
-      const uploaded = await startUpload(images);
-      remote =
-        uploaded?.map((item) => ({
-          url: item.ufsUrl,
-          key: item.key,
-          name: item.name,
-        })) ?? [];
-    } catch {
-      remote = [];
-    }
-    const result = commands.ingestPhotos({
-      files: local.map((item) => {
-        const match = remote.find((entry) => entry.name === item.name);
-        if (match) URL.revokeObjectURL(item.src);
-        return {
-          src: match?.url ?? item.src,
+  const ingestFiles = useCallback(
+    async (files: File[], place = false) => {
+      const images = files.filter((file) => file.type.startsWith("image/"));
+      if (images.length === 0) {
+        const summary = "Those files are not images.";
+        setStatus(summary);
+        return { ok: false as const, summary };
+      }
+
+      const uploadTask = startUpload(images).catch(() => undefined);
+      const local = await Promise.all(
+        images.map(async (file) => {
+          const meta = await readImage(file);
+          return { file, ...meta, mimeType: file.type, name: file.name };
+        }),
+      );
+
+      const result = commands.ingestPhotos({
+        files: local.map((item) => ({
+          src: item.src,
           name: item.name,
           width: item.width,
           height: item.height,
           mimeType: item.mimeType,
-          blobKey: match?.key,
-        };
-      }),
-    });
-    setStatus(result.summary);
-    if (place && result.ok) {
+        })),
+      });
       const assetIds = Array.isArray(result.data?.assetIds)
         ? (result.data.assetIds as string[])
         : [];
-      if (assetIds.length > 0) {
-        const placed = commands.placePhotos({ assetIds, actor: "human" });
-        setStatus(placed.summary);
-        return placed;
-      }
-    }
-    return result;
-  }
+      const placed =
+        place && result.ok && assetIds.length > 0
+          ? commands.placePhotos({ assetIds, actor: "human" })
+          : result;
+      startTransition(() => setStatus(placed.summary));
+
+      void uploadTask.then((uploaded) => {
+        if (!uploaded || uploaded.length === 0 || assetIds.length === 0) return;
+        const items = local.flatMap((item, index) => {
+          const match =
+            uploaded.find((entry) => entry.name === item.name) ?? uploaded[index];
+          const assetId = assetIds[index];
+          if (!match || !assetId) return [];
+          return [{ assetId, url: match.ufsUrl, key: match.key }];
+        });
+        if (items.length === 0) return;
+        commands.bindRemoteOriginals({ items });
+        for (const item of local) URL.revokeObjectURL(item.src);
+        startTransition(() => {
+          setStatus(`Saved ${items.length} photo(s) to UploadThing.`);
+        });
+      });
+
+      return placed;
+    },
+    [commands, startUpload],
+  );
 
   return { ingestFiles, isUploading, status, setStatus };
 }

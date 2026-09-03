@@ -356,6 +356,43 @@ export function createWorkspaceCommands(
       return ok(`Added ${assets.length} photo(s) to the tray.`, ["assets"], { assetIds });
     },
 
+    bindRemoteOriginals(input: {
+      items: Array<{ assetId: string; url: string; key: string }>;
+    }) {
+      if (input.items.length === 0) return ok("Nothing to bind.", []);
+      const catalog = store.get();
+      const byAsset = new Map(input.items.map((item) => [item.assetId, item]));
+      const versions = catalog.versions.map((version) => {
+        const hit = byAsset.get(version.assetId);
+        const asset = catalog.assets.find((item) => item.id === version.assetId);
+        if (!hit || !asset || version.id !== asset.originalVersionId) return version;
+        if (version.localSrc === hit.url && version.originalBlobKey === hit.key) {
+          return version;
+        }
+        return {
+          ...version,
+          localSrc: hit.url,
+          originalBlobKey: hit.key,
+        };
+      });
+      store.set({ ...catalog, versions });
+      for (const item of input.items) {
+        const asset = catalog.assets.find((entry) => entry.id === item.assetId);
+        const version = versions.find(
+          (entry) => asset && entry.id === asset.originalVersionId,
+        );
+        if (!version) continue;
+        for (const placement of catalog.placements) {
+          if (placement.assetId !== item.assetId || !placement.tldrawShapeId) continue;
+          canvas?.updateImageSrc(placement.tldrawShapeId, item.url, {
+            width: version.width,
+            height: version.height,
+          });
+        }
+      }
+      return ok("Remote originals bound.", ["assets"]);
+    },
+
     recordPreference(input: {
       actor?: Actor;
       preferredAssetId: string;
@@ -570,7 +607,8 @@ export function createWorkspaceCommands(
         tldrawShapeId: shapeIds[index],
       }));
       if (input.layout) canvas.arrange(shapeIds.filter(Boolean), input.layout);
-      canvas.lookAtShapes(shapeIds.filter(Boolean));
+      if (shapeIds.length === 1) canvas.lookAtShape(shapeIds[0]);
+      else canvas.lookAtShapes(shapeIds.filter(Boolean));
 
       mutate(
         input.actor ?? "human",

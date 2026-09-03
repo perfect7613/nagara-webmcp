@@ -32,9 +32,15 @@ function KeepersBoardInner({
 }) {
   const snapshot = useMemo(() => loadSnapshot(), []);
   const onEditorRef = useRef(onEditor);
+  const persistTimer = useRef<number>(0);
   onEditorRef.current = onEditor;
 
-  useEffect(() => () => onEditorRef.current(null), []);
+  useEffect(() => {
+    return () => {
+      window.clearTimeout(persistTimer.current);
+      onEditorRef.current(null);
+    };
+  }, []);
 
   return (
     <Quickdraw
@@ -46,7 +52,8 @@ function KeepersBoardInner({
       onMount={(editor) => onEditorRef.current(editor)}
       onChange={(_diff, source, editor) => {
         if (source !== "user") return;
-        persistSnapshot(editor);
+        window.clearTimeout(persistTimer.current);
+        persistTimer.current = window.setTimeout(() => persistSnapshot(editor), 280);
       }}
     />
   );

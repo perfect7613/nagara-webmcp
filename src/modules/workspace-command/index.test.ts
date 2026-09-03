@@ -41,6 +41,36 @@ describe("workspace commands", () => {
     expect(added).toBeTruthy();
   });
 
+  it("swaps a local original for the uploaded URL without waiting on ingest", () => {
+    const srcs: string[] = [];
+    const canvas = stubCanvas([]);
+    canvas.updateImageSrc = (_id, src) => {
+      srcs.push(src);
+    };
+    const store = createMemoryCatalogStore(emptyCatalog());
+    const commands = createWorkspaceCommands(store, canvas);
+    commands.ingestPhotos({
+      files: [
+        {
+          src: "blob:local-photo",
+          name: "porch.jpg",
+          width: 1200,
+          height: 800,
+          mimeType: "image/jpeg",
+        },
+      ],
+    });
+    commands.placePhotos({ actor: "human" });
+    const assetId = store.get().assets[0]?.id ?? "";
+    const result = commands.bindRemoteOriginals({
+      items: [{ assetId, url: "https://ufs.sh/porch.jpg", key: "k1" }],
+    });
+    expect(result.ok).toBe(true);
+    expect(store.get().versions[0]?.localSrc).toBe("https://ufs.sh/porch.jpg");
+    expect(store.get().versions[0]?.originalBlobKey).toBe("k1");
+    expect(srcs).toEqual(["https://ufs.sh/porch.jpg"]);
+  });
+
   it("does not permanently delete archived photos", () => {
     const store = createMemoryCatalogStore(buildDemoCatalog());
     const commands = createWorkspaceCommands(store);
