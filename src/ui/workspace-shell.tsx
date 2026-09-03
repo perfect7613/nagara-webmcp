@@ -31,6 +31,18 @@ const TLDRAW_COMPONENTS: TLComponents = {
   MainMenu: null,
   StylePanel: null,
   NavigationPanel: null,
+  ActionsMenu: null,
+  ZoomMenu: null,
+  QuickActions: null,
+  HelperButtons: null,
+  DebugPanel: null,
+  DebugMenu: null,
+  ImageToolbar: null,
+  VideoToolbar: null,
+  CursorChatBubble: null,
+  FollowingIndicator: null,
+  PeopleMenu: null,
+  UserPresenceEditor: null,
 };
 
 const TLDRAW_OVERRIDES: TLUiOverrides = {
@@ -139,9 +151,13 @@ export function WorkspaceShell() {
             onClear={clearWorkspaceCatalog}
           />
           {trayOpen ? <PhotoTray /> : null}
-          {dockOpen ? <AgentDock spatialIntent={spatialIntent} /> : null}
-          {graphOpen ? <VariantRail /> : null}
-          <CanvasActions spatialIntent={spatialIntent} trayOpen={trayOpen} />
+          {dockOpen || graphOpen ? (
+            <div className="right-islands">
+              {dockOpen ? <AgentDock spatialIntent={spatialIntent} /> : null}
+              {graphOpen ? <VariantRail /> : null}
+            </div>
+          ) : null}
+          <CanvasActions spatialIntent={spatialIntent} />
           <PromptBar
             spatialIntent={spatialIntent}
             graphOpen={graphOpen}

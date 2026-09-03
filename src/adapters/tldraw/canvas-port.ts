@@ -12,6 +12,7 @@ import type {
   CanvasImage,
   CanvasView,
 } from "@/modules/spatial-intent";
+import { displaySizeForPlacement } from "@/adapters/tldraw/placement-geometry";
 
 export function createTldrawCanvasPort(getEditor: () => Editor | null): CanvasPort {
   return {
@@ -22,7 +23,11 @@ export function createTldrawCanvasPort(getEditor: () => Editor | null): CanvasPo
       drafts.forEach((draft, index) => {
         const beside = resolveBeside(editor, draft);
         const besideBounds = beside ? editor.getShapePageBounds(beside.id) : undefined;
-        const size = displaySize(draft, besideBounds, viewport);
+        const size = displaySizeForPlacement(
+          draft,
+          besideBounds ? { w: besideBounds.w, h: besideBounds.h } : undefined,
+          { w: viewport.w, h: viewport.h },
+        );
         const point = placementPoint(editor, draft, index, size, besideBounds, viewport);
         const assetId = AssetRecordType.createId();
         editor.createAssets([
@@ -138,6 +143,11 @@ export function createTldrawCanvasPort(getEditor: () => Editor | null): CanvasPo
         id: image.id,
         type: "image",
         opacity: 1,
+        props: {
+          ...image.props,
+          w: image.props.w,
+          h: image.props.h,
+        },
         meta: { ...image.meta, ghost: false },
       });
     },
@@ -384,20 +394,6 @@ function resolveBeside(editor: Editor, draft: PlacementDraft) {
       (shape) => shape.type === "image" && shape.meta.ghost !== true,
     ) ?? null
   );
-}
-
-function displaySize(
-  draft: PlacementDraft,
-  besideBounds: Box | undefined,
-  viewport: Box,
-) {
-  if (besideBounds && besideBounds.h > 8) {
-    const scale = besideBounds.h / Math.max(draft.height, 1);
-    return { w: Math.max(8, draft.width * scale), h: besideBounds.h };
-  }
-  const maxSide = Math.min(Math.max(viewport.w, 320) * 0.52, 860);
-  const scale = Math.min(1, maxSide / Math.max(draft.width, draft.height, 1));
-  return { w: draft.width * scale, h: draft.height * scale };
 }
 
 function placementPoint(
