@@ -20,10 +20,8 @@ import { useWorkspace } from "@/ui/workspace-provider";
 
 export function CanvasActions({
   spatialIntent,
-  trayOpen,
 }: {
   spatialIntent: SpatialIntent;
-  trayOpen: boolean;
 }) {
   const { catalog, commands, editor } = useWorkspace();
   const [epoch, setEpoch] = useState(0);
@@ -53,84 +51,107 @@ export function CanvasActions({
   void epoch;
 
   return (
-    <div className={trayOpen ? "canvas-chrome is-shifted" : "canvas-chrome"}>
+    <div className="canvas-chrome">
+      {showSelection ? (
+        <div className="chrome-island selection-actions">
+          <button
+            type="button"
+            className="ghost icon-btn"
+            disabled={!imageSelected || running}
+            aria-label="Run edit"
+            title="Run edit (⌘↵)"
+            onClick={() => window.dispatchEvent(new Event("keepers:run-edit"))}
+          >
+            <WandSparkles className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            className="ghost icon-btn"
+            disabled={selectedCount === 0}
+            aria-label="Duplicate"
+            title="Duplicate"
+            onClick={() => commands.duplicateSelection()}
+          >
+            <Copy className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            className="ghost icon-btn"
+            disabled={!imageSelected || running}
+            aria-label="Remove background"
+            title="Remove background"
+            onClick={() => void commands.removeBackground({ actor: "human" })}
+          >
+            <Scissors className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            className={isolateOpen ? "ghost icon-btn is-on" : "ghost icon-btn"}
+            disabled={!imageSelected || running}
+            aria-label="Isolate object"
+            title="Isolate object"
+            aria-pressed={isolateOpen}
+            onClick={() => setIsolateOpen((value) => !value)}
+          >
+            <ScanSearch className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            className="ghost icon-btn"
+            disabled={selectedCount === 0}
+            aria-label="Download selection"
+            title="Download selection"
+            onClick={() => void downloadSelection()}
+          >
+            <Download className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            className="ghost icon-btn"
+            disabled={selectedCount === 0}
+            aria-label="Bring to front"
+            title="Bring to front"
+            onClick={() => editor?.bringToFront(editor.getSelectedShapeIds())}
+          >
+            <BringToFront className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            className="ghost icon-btn"
+            disabled={selectedCount === 0}
+            aria-label="Send to back"
+            title="Send to back"
+            onClick={() => editor?.sendToBack(editor.getSelectedShapeIds())}
+          >
+            <SendToBack className="h-4 w-4" />
+          </button>
+        </div>
+      ) : null}
+      {isolateOpen ? (
+        <form
+          className="chrome-island isolate-form"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void commands.isolateObject({
+              actor: "human",
+              object: isolateTarget,
+            });
+            setIsolateOpen(false);
+          }}
+        >
+          <input
+            autoFocus
+            className="prompt-input isolate-input"
+            placeholder="What to isolate?"
+            value={isolateTarget}
+            onChange={(event) => setIsolateTarget(event.target.value)}
+          />
+          <button type="submit" className="solid" disabled={running}>
+            Isolate
+          </button>
+        </form>
+      ) : null}
       <div className="chrome-island zoom-island">
-        {showSelection ? (
-          <>
-            <button
-              type="button"
-              className="ghost icon-btn"
-              disabled={!imageSelected || running}
-              aria-label="Run edit"
-              title="Run edit (⌘↵)"
-              onClick={() => window.dispatchEvent(new Event("keepers:run-edit"))}
-            >
-              <WandSparkles className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              className="ghost icon-btn"
-              disabled={selectedCount === 0}
-              aria-label="Duplicate"
-              title="Duplicate"
-              onClick={() => commands.duplicateSelection()}
-            >
-              <Copy className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              className="ghost icon-btn"
-              disabled={!imageSelected || running}
-              aria-label="Remove background"
-              title="Remove background"
-              onClick={() => void commands.removeBackground({ actor: "human" })}
-            >
-              <Scissors className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              className={isolateOpen ? "ghost icon-btn is-on" : "ghost icon-btn"}
-              disabled={!imageSelected || running}
-              aria-label="Isolate object"
-              title="Isolate object"
-              aria-pressed={isolateOpen}
-              onClick={() => setIsolateOpen((value) => !value)}
-            >
-              <ScanSearch className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              className="ghost icon-btn"
-              disabled={selectedCount === 0}
-              aria-label="Download selection"
-              title="Download selection"
-              onClick={() => void downloadSelection()}
-            >
-              <Download className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              className="ghost icon-btn"
-              disabled={selectedCount === 0}
-              aria-label="Bring to front"
-              title="Bring to front"
-              onClick={() => editor?.bringToFront(editor.getSelectedShapeIds())}
-            >
-              <BringToFront className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              className="ghost icon-btn"
-              disabled={selectedCount === 0}
-              aria-label="Send to back"
-              title="Send to back"
-              onClick={() => editor?.sendToBack(editor.getSelectedShapeIds())}
-            >
-              <SendToBack className="h-4 w-4" />
-            </button>
-            <span className="chrome-rule" />
-          </>
-        ) : null}
         <button
           type="button"
           className="ghost icon-btn"
@@ -194,30 +215,6 @@ export function CanvasActions({
         >
           <Maximize2 className="h-4 w-4" />
         </button>
-        {isolateOpen ? (
-          <form
-            className="isolate-form"
-            onSubmit={(event) => {
-              event.preventDefault();
-              void commands.isolateObject({
-                actor: "human",
-                object: isolateTarget,
-              });
-              setIsolateOpen(false);
-            }}
-          >
-            <input
-              autoFocus
-              className="prompt-input isolate-input"
-              placeholder="What to isolate?"
-              value={isolateTarget}
-              onChange={(event) => setIsolateTarget(event.target.value)}
-            />
-            <button type="submit" className="solid" disabled={running}>
-              Isolate
-            </button>
-          </form>
-        ) : null}
       </div>
     </div>
   );

@@ -116,6 +116,8 @@ describe("workspace commands", () => {
     expect(result.ok).toBe(true);
     const ghost = drafts.find((draft) => draft.ghost);
     expect(ghost?.besideShapeId).toBe("shape_0");
+    expect(ghost?.width).toBe(1200);
+    expect(ghost?.height).toBe(800);
   });
 
   it("refuses an edit with an empty instruction", async () => {
