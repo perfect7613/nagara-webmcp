@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" width="1200" height="900">
+  <rect width="1200" height="900" fill="#c9b79a"/>
+  <rect x="180" y="220" width="840" height="520" fill="#8a6a4a"/>
+  <rect x="220" y="260" width="760" height="80" fill="#eee4d2"/>
+  <circle cx="560" cy="430" r="40" fill="#d9d0c0"/>
+  <circle cx="700" cy="430" r="36" fill="#cfc3ae"/>
+  <text x="60" y="80" fill="#3a2a1c" font-size="28" font-family="Georgia">porch · left crop</text>
+</svg>

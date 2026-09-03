@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 900" width="1400" height="900">
+  <rect width="1400" height="900" fill="#8fb4c6"/>
+  <polygon points="0,520 1400,470 1400,900 0,900" fill="#3e6a52"/>
+  <ellipse cx="700" cy="500" rx="520" ry="40" fill="#6ea0b4"/>
+  <rect x="980" y="560" width="140" height="90" fill="#d2652d"/>
+  <rect x="1000" y="540" width="100" height="24" fill="#1c1914"/>
+  <text x="70" y="80" fill="#1c1914" font-size="28" font-family="Georgia">lakeside · stray cooler</text>
+</svg>

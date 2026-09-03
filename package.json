@@ -1,0 +1,41 @@
+{
+  "name": "keepers-webmcp",
+  "version": "0.1.0",
+  "private": false,
+  "license": "MIT",
+  "description": "A collaborative photo workspace where people and WebMCP agents choose, point, and create together.",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "@huggingface/inference": "^4.13.28",
+    "@tldraw/tlschema": "^5.4.0",
+    "@uploadthing/react": "^7.3.3",
+    "idb-keyval": "^6.3.0",
+    "next": "16.3.4",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "tldraw": "^5.4.0",
+    "uploadthing": "^7.7.4",
+    "use-webmcp-tool": "^0.2.0",
+    "webmcp-types": "^0.1.6"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "babel-plugin-react-compiler": "1.0.0",
+    "eslint": "^9",
+    "eslint-config-next": "16.3.4",
+    "jsdom": "^30.0.1",
+    "tailwindcss": "^4",
+    "typescript": "^5",
+    "vitest": "^4.1.11"
+  }
+}
