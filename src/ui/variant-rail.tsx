@@ -131,8 +131,8 @@ export function VariantRail() {
           <h2>Version history</h2>
           <p className="muted">
             {versions.length <= 1
-              ? "Original stays. Each Qwen edit becomes a new node to the right."
-              : "Click a node to show that version on the table. Originals are never overwritten."}
+              ? "Each edit becomes a node."
+              : "Click a node to show it on the table."}
           </p>
         </div>
       </div>

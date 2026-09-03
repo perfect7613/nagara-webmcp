@@ -180,12 +180,15 @@ body {
 
 .workspace.is-kanvas .rail {
   position: absolute;
-  left: 50%;
-  bottom: 88px;
+  top: 76px;
+  right: 16px;
+  left: auto;
+  bottom: auto;
   z-index: 21;
-  width: min(720px, calc(100vw - 32px));
-  height: 228px;
-  transform: translateX(-50%);
+  width: 300px;
+  height: auto;
+  max-height: calc(100dvh - 160px);
+  transform: none;
   border: 1px solid rgba(244, 234, 214, 0.14);
   background: color-mix(in srgb, #120f0d 94%, transparent);
   backdrop-filter: blur(16px);
@@ -249,6 +252,10 @@ body {
   flex-direction: column;
   align-items: flex-start;
   gap: 8px;
+}
+
+.canvas-chrome.is-shifted {
+  left: 348px;
 }
 
 .selection-actions,
@@ -817,13 +824,15 @@ button {
 
 .rail {
   display: grid;
-  grid-template-columns: 200px minmax(0, 1fr);
+  grid-template-rows: auto minmax(160px, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   align-items: stretch;
-  gap: 16px;
-  height: 220px;
-  padding: 14px 22px;
-  border-top: 1px solid rgba(244, 234, 214, 0.08);
-  background: #120f0d;
+  gap: 12px;
+  height: auto;
+  min-height: 220px;
+  padding: 12px;
+  border-top: 0;
+  background: transparent;
 }
 
 .rail-flow {
@@ -923,10 +932,16 @@ button {
     width: min(320px, calc(100% - 24px));
     bottom: 88px;
   }
+  .workspace.is-kanvas .canvas-chrome.is-shifted {
+    left: 16px;
+  }
   .workspace.is-kanvas .rail {
     left: 12px;
     right: 12px;
+    top: auto;
+    bottom: 88px;
     width: auto;
+    max-height: 200px;
     transform: none;
   }
   .verbs {

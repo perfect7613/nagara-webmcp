@@ -29,6 +29,8 @@ const TLDRAW_COMPONENTS: TLComponents = {
   TopPanel: null,
   PageMenu: null,
   MainMenu: null,
+  StylePanel: null,
+  NavigationPanel: null,
 };
 
 const TLDRAW_OVERRIDES: TLUiOverrides = {
@@ -39,7 +41,7 @@ export function WorkspaceShell() {
   const { catalog, commands, setEditor, editor } = useWorkspace();
   const { ingestFiles } = useIngestPhotos();
   const [webmcpReady, setWebmcpReady] = useState(false);
-  const [trayOpen, setTrayOpen] = useState(true);
+  const [trayOpen, setTrayOpen] = useState(false);
   const [dockOpen, setDockOpen] = useState(false);
   const [graphOpen, setGraphOpen] = useState(false);
   const [canvasReady, setCanvasReady] = useState(false);
@@ -55,6 +57,8 @@ export function WorkspaceShell() {
   useEffect(() => {
     if (window.matchMedia("(max-width: 767px)").matches) {
       setTrayOpen(false);
+      setDockOpen(false);
+      setGraphOpen(false);
     }
   }, []);
 
@@ -137,7 +141,7 @@ export function WorkspaceShell() {
           {trayOpen ? <PhotoTray /> : null}
           {dockOpen ? <AgentDock spatialIntent={spatialIntent} /> : null}
           {graphOpen ? <VariantRail /> : null}
-          <CanvasActions spatialIntent={spatialIntent} />
+          <CanvasActions spatialIntent={spatialIntent} trayOpen={trayOpen} />
           <PromptBar
             spatialIntent={spatialIntent}
             graphOpen={graphOpen}
