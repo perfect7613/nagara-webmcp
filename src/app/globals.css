@@ -105,13 +105,9 @@ body {
   height: 100%;
 }
 
-.workspace.is-kanvas .tl-background,
-.workspace.is-kanvas .tl-canvas {
-  background: var(--paper);
-}
+/* keep tldraw's own white canvas background intact */
 
 .workspace.is-kanvas .tl-theme__light {
-  --tl-color-background: #f4ead6;
   --tl-color-selection-stroke: #e3942d;
   --tl-color-selection-fill: color-mix(in srgb, #e3942d 24%, transparent);
   --tl-color-selected: #e3942d;
@@ -119,7 +115,6 @@ body {
   --tl-color-focus: #e3942d;
 }
 
-.workspace.is-kanvas .tlui-layout__top,
 .workspace.is-kanvas .tlui-help-menu,
 .workspace.is-kanvas .tlui-debug-panel,
 .workspace.is-kanvas .tlui-image-toolbar,
