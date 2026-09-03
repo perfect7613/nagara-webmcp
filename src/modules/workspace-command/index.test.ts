@@ -84,7 +84,7 @@ describe("workspace commands", () => {
   });
 
   it("places a ghost edit beside the source photo", async () => {
-    const drafts: Array<{ besideShapeId?: string; ghost?: boolean }> = [];
+    const drafts: Array<{ besideShapeId?: string; ghost?: boolean; width?: number; height?: number }> = [];
     const canvas = stubCanvas(drafts);
     const store = createMemoryCatalogStore(emptyCatalog());
     const commands = createWorkspaceCommands(store, canvas, {
@@ -164,7 +164,7 @@ describe("webmcp tool availability", () => {
 });
 
 function stubCanvas(
-  drafts: Array<{ besideShapeId?: string; ghost?: boolean }>,
+  drafts: Array<{ besideShapeId?: string; ghost?: boolean; width?: number; height?: number }>,
 ): CanvasPort {
   let placed = 0;
   const noop = () => undefined;
