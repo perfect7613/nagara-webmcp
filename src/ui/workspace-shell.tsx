@@ -1,7 +1,8 @@
 "use client";
+"use no memo";
 
 import { useEffect, useMemo, useRef, useState, type DragEvent } from "react";
-import { Tldraw, type Editor, type TLComponents, type TLUiOverrides } from "tldraw";
+import type { Editor } from "tldraw";
 import { Image as ImageIcon } from "lucide-react";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { WebMcpBridge } from "@/adapters/webmcp/bridge";
@@ -9,6 +10,7 @@ import { PRODUCT_NAME, PRODUCT_TAGLINE } from "@/domain/product";
 import { resolveSpatialIntent } from "@/modules/spatial-intent";
 import { AgentDock } from "@/ui/agent-dock";
 import { CanvasActions } from "@/ui/canvas-actions";
+import { KeepersTldraw } from "@/ui/keepers-tldraw";
 import { PhotoTray } from "@/ui/photo-tray";
 import { PromptBar } from "@/ui/prompt-bar";
 import { TopBar } from "@/ui/top-bar";
@@ -19,26 +21,6 @@ import {
   clearWorkspaceCatalog,
   useWorkspace,
 } from "@/ui/workspace-provider";
-
-const TLDRAW_COMPONENTS: TLComponents = {
-  // Hide chrome we replace with our own UI
-  SharePanel: null,
-  HelpMenu: null,
-  Minimap: null,
-  StylePanel: null,
-  NavigationPanel: null,
-  DebugPanel: null,
-  DebugMenu: null,
-  // Hide multi-user chrome (single-user app)
-  CursorChatBubble: null,
-  FollowingIndicator: null,
-  PeopleMenu: null,
-  UserPresenceEditor: null,
-};
-
-const TLDRAW_OVERRIDES: TLUiOverrides = {
-  tools: (_editor, tools) => tools,
-};
 
 export function WorkspaceShell() {
   const { catalog, commands, setEditor, editor } = useWorkspace();
@@ -64,10 +46,10 @@ export function WorkspaceShell() {
     }
   }, []);
 
-
   useEffect(() => {
+    if (!editor) return;
     commands.syncCanvas(canvasView);
-  }, [commands, canvasView]);
+  }, [commands, canvasView, editor]);
 
   const spatialIntent = useMemo(
     () => resolveSpatialIntent(canvasView),
@@ -95,14 +77,10 @@ export function WorkspaceShell() {
               </p>
             </div>
           ) : null}
-          <Tldraw
-            persistenceKey={`keepers-board-${catalog.workspaceId}`}
-            autoFocus={false}
-            components={TLDRAW_COMPONENTS}
-            overrides={TLDRAW_OVERRIDES}
-            onMount={(next: Editor) => {
+          <KeepersTldraw
+            onEditor={(next) => {
               setEditor(next);
-              next.user.updateUserPreferences({ colorScheme: "light" });
+              if (!next) return;
               const supported =
                 typeof document.modelContext?.registerTool === "function";
               setWebmcpReady(supported);

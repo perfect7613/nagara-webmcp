@@ -1,4 +1,5 @@
 "use client";
+"use no memo";
 
 import { useEffect, useMemo, useState } from "react";
 import type { Editor } from "tldraw";
@@ -10,12 +11,19 @@ export function useCanvasView(editor: Editor | null) {
   useEffect(() => {
     if (!editor) return;
     const bump = () => setEpoch((value) => value + 1);
-    bump();
-    const unlisten = editor.store.listen(bump, { source: "all", scope: "all" });
-    const persist = window.setTimeout(bump, 50);
+    const unlistenDocument = editor.store.listen(bump, {
+      source: "user",
+      scope: "document",
+    });
+    const unlistenSession = editor.store.listen(bump, {
+      source: "user",
+      scope: "session",
+    });
+    const afterReady = window.setTimeout(bump, 320);
     return () => {
-      unlisten();
-      window.clearTimeout(persist);
+      unlistenDocument();
+      unlistenSession();
+      window.clearTimeout(afterReady);
     };
   }, [editor]);
 

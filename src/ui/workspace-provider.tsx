@@ -2,6 +2,7 @@
 
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
@@ -86,17 +87,19 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     }
   }, [catalog]);
 
+  const setEditor = useCallback((next: Editor | null) => {
+    editorRef.current = next;
+    setEditorState(next);
+  }, []);
+
   const value = useMemo(
     () => ({
       catalog,
       commands,
       editor,
-      setEditor: (next: Editor | null) => {
-        editorRef.current = next;
-        setEditorState(next);
-      },
+      setEditor,
     }),
-    [catalog, commands, editor],
+    [catalog, commands, editor, setEditor],
   );
 
   return (
