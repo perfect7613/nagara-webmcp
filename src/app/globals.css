@@ -133,12 +133,17 @@ body {
   display: none;
 }
 
+.workspace.is-kanvas .right-islands .dock,
+.workspace.is-kanvas .right-islands .rail {
+  min-height: 0;
+}
+
 .workspace.is-kanvas .tlui-layout__bottom {
   padding-bottom: 84px;
 }
 
 .workspace.is-kanvas .tlui-layout__bottom__main {
-  padding-left: 248px;
+  padding-left: 340px;
   padding-right: 16px;
   box-sizing: border-box;
 }
@@ -1014,15 +1019,15 @@ button {
     left: 12px;
     right: 12px;
     top: auto;
-    bottom: 88px;
+    bottom: 196px;
     width: auto;
-    max-height: 180px;
+    max-height: 140px;
   }
   .workspace.is-kanvas:has(.right-islands) .canvas-chrome {
-    bottom: 280px;
+    bottom: 348px;
   }
   .workspace.is-kanvas:has(.right-islands) .tray-shell {
-    bottom: 360px;
+    bottom: 428px;
   }
   .workspace.is-kanvas .tlui-layout__bottom__main,
   .workspace.is-kanvas:has(.right-islands) .tlui-layout__bottom__main {
@@ -1036,6 +1041,10 @@ button {
   .verbs {
     display: none;
   }
+}
+
+body:has(.workspace) nextjs-portal {
+  display: none;
 }
 
 .sr-only {
