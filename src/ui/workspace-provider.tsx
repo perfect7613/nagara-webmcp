@@ -11,8 +11,8 @@ import {
   useSyncExternalStore,
   type ReactNode,
 } from "react";
-import type { Editor } from "tldraw";
-import { createTldrawCanvasPort } from "@/adapters/tldraw/canvas-port";
+import type { Editor } from "@quickdrawjs/core";
+import { createCanvasPort } from "@/adapters/quickdraw/canvas-port";
 import { buildDemoCatalog, emptyCatalog } from "@/modules/photo-catalog/demo";
 import { createMemoryCatalogStore } from "@/modules/photo-catalog/store";
 import {
@@ -69,7 +69,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   );
 
   const commands = useMemo(() => {
-    const canvas = createTldrawCanvasPort(() => editorRef.current);
+    const canvas = createCanvasPort(() => editorRef.current);
     return createWorkspaceCommands(store, canvas, jobPort);
   }, [store, jobPort]);
 
@@ -137,6 +137,7 @@ export function clearWorkspaceCatalog() {
   try {
     localStorage.removeItem(CATALOG_KEY);
     localStorage.removeItem("keepers.catalog.v2");
+    localStorage.removeItem("keepers.quickdraw.v1");
   } catch {
     /* ignore */
   }

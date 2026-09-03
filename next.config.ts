@@ -9,7 +9,7 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "images.unsplash.com", pathname: "/**" },
     ],
   },
-  transpilePackages: ["tldraw", "@xyflow/react"],
+  transpilePackages: ["@quickdrawjs/react", "@quickdrawjs/core", "@xyflow/react"],
 };
 
 export default nextConfig;

@@ -2,8 +2,8 @@
 "use no memo";
 
 import { useEffect, useMemo, useState } from "react";
-import type { Editor } from "tldraw";
-import { readCanvasView } from "@/adapters/tldraw/canvas-port";
+import type { Editor } from "@quickdrawjs/core";
+import { readCanvasView } from "@/adapters/quickdraw/canvas-port";
 
 export function useCanvasView(editor: Editor | null) {
   const [epoch, setEpoch] = useState(0);
@@ -11,19 +11,13 @@ export function useCanvasView(editor: Editor | null) {
   useEffect(() => {
     if (!editor) return;
     const bump = () => setEpoch((value) => value + 1);
-    const unlistenDocument = editor.store.listen(bump, {
-      source: "user",
-      scope: "document",
-    });
-    const unlistenSession = editor.store.listen(bump, {
-      source: "user",
-      scope: "session",
-    });
-    const afterReady = window.setTimeout(bump, 320);
+    const unlistenStore = editor.store.listen(bump, { source: "user" });
+    const unlistenHistory = editor.store.listenHistory(bump);
+    const unlistenSelection = editor.on("selection", bump);
     return () => {
-      unlistenDocument();
-      unlistenSession();
-      window.clearTimeout(afterReady);
+      unlistenStore();
+      unlistenHistory();
+      unlistenSelection();
     };
   }, [editor]);
 

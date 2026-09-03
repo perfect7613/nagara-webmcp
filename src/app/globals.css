@@ -1,6 +1,6 @@
 @import "tailwindcss";
 @import "@xyflow/react/dist/style.css";
-@import "tldraw/tldraw.css";
+@import "@quickdrawjs/core/quickdraw.css";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
@@ -98,7 +98,7 @@ body {
   background: var(--paper);
 }
 
-.workspace.is-kanvas .light-table .tl-container {
+.workspace.is-kanvas .keepers-board {
   position: absolute;
   inset: 0;
   z-index: 1;
@@ -107,31 +107,16 @@ body {
   min-height: 100%;
 }
 
-.workspace.is-kanvas .tl-background {
+.workspace.is-kanvas .qd-root {
   background: #fff;
 }
 
-/* keep tldraw's own white canvas background intact */
-
-.workspace.is-kanvas .tl-theme__light {
-  --tl-color-selection-stroke: #e3942d;
-  --tl-color-selection-fill: color-mix(in srgb, #e3942d 24%, transparent);
-  --tl-color-selected: #e3942d;
-  --tl-color-primary: #e3942d;
-  --tl-color-focus: #e3942d;
+.workspace.is-kanvas .qd-actions {
+  display: none;
 }
 
-.workspace.is-kanvas .tlui-help-menu,
-.workspace.is-kanvas .tlui-debug-panel,
-.workspace.is-kanvas .tlui-image-toolbar,
-.workspace.is-kanvas .tlui-video-toolbar,
-.workspace.is-kanvas .tlui-style-panel,
-.workspace.is-kanvas .tlui-navigation-panel,
-.workspace.is-kanvas .tlui-share-zone,
-.workspace.is-kanvas .tlui-menu-zone,
-.workspace.is-kanvas .tlui-helper-buttons,
-.workspace.is-kanvas .tlui-quick-actions {
-  display: none;
+.workspace.is-kanvas .qd-dock {
+  bottom: 88px;
 }
 
 .workspace.is-kanvas .right-islands .dock,
@@ -139,46 +124,6 @@ body {
   min-height: 0;
 }
 
-.workspace.is-kanvas .tlui-layout__bottom {
-  padding-bottom: 84px;
-}
-
-.workspace.is-kanvas .tlui-layout__bottom__main {
-  padding-left: 16px;
-  padding-right: 16px;
-  box-sizing: border-box;
-}
-
-.workspace.is-kanvas:has(.canvas-chrome) .tlui-layout__bottom__main {
-  padding-left: 236px;
-}
-
-.workspace.is-kanvas:has(.right-islands) .tlui-layout__bottom__main {
-  padding-right: 328px;
-}
-
-.workspace.is-kanvas .tlui-main-toolbar {
-  --tl-color-background: transparent;
-  --tl-color-low: #201c18;
-  --tl-color-panel: #120f0d;
-  --tl-color-text: #f4ead6;
-  --tl-color-text-1: #f4ead6;
-  --tl-color-selected: #e3942d;
-  --tl-color-primary: #e3942d;
-  --tl-color-focus: #e3942d;
-}
-
-.workspace.is-kanvas .tlui-main-toolbar__tools,
-.workspace.is-kanvas .tlui-main-toolbar__extras__controls {
-  background: color-mix(in srgb, #120f0d 92%, transparent);
-  border: 1px solid rgba(244, 234, 214, 0.14);
-  backdrop-filter: blur(16px);
-}
-
-.workspace.is-kanvas .tlui-button[data-state="hinted"],
-.workspace.is-kanvas .tlui-button[aria-pressed="true"] {
-  color: var(--safelight);
-}
 
 .float-layer {
   position: absolute;
@@ -836,7 +781,7 @@ button {
   margin-top: 12px;
 }
 
-.light-table .tl-container {
+.light-table .keepers-board {
   height: 100%;
 }
 
@@ -1031,11 +976,8 @@ button {
     width: auto;
     max-height: 160px;
   }
-  .workspace.is-kanvas .tlui-layout__bottom__main,
-  .workspace.is-kanvas:has(.canvas-chrome) .tlui-layout__bottom__main,
-  .workspace.is-kanvas:has(.right-islands) .tlui-layout__bottom__main {
-    padding-left: 12px;
-    padding-right: 12px;
+  .workspace.is-kanvas .qd-dock {
+    bottom: 96px;
   }
   .workspace.is-kanvas .canvas-chrome {
     left: 12px;

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { displaySizeForPlacement } from "@/adapters/tldraw/placement-geometry";
+import { displaySizeForPlacement } from "@/adapters/quickdraw/placement-geometry";
 
 describe("displaySizeForPlacement", () => {
   it("matches the source bounds for a ghost placed beside it", () => {

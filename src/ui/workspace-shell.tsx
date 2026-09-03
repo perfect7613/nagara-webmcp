@@ -2,7 +2,7 @@
 "use no memo";
 
 import { useEffect, useMemo, useRef, useState, type DragEvent } from "react";
-import type { Editor } from "tldraw";
+import type { Editor } from "@quickdrawjs/core";
 import { Image as ImageIcon } from "lucide-react";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { WebMcpBridge } from "@/adapters/webmcp/bridge";
@@ -10,7 +10,7 @@ import { PRODUCT_NAME, PRODUCT_TAGLINE } from "@/domain/product";
 import { resolveSpatialIntent } from "@/modules/spatial-intent";
 import { AgentDock } from "@/ui/agent-dock";
 import { CanvasActions } from "@/ui/canvas-actions";
-import { KeepersTldraw } from "@/ui/keepers-tldraw";
+import { KeepersBoard } from "@/ui/keepers-board";
 import { PhotoTray } from "@/ui/photo-tray";
 import { PromptBar } from "@/ui/prompt-bar";
 import { TopBar } from "@/ui/top-bar";
@@ -35,7 +35,7 @@ export function WorkspaceShell() {
     canvasView.images.length > 0 ||
     catalog.placements.length > 0 ||
     (editor
-      ? editor.getCurrentPageShapes().some((shape) => shape.type === "image")
+      ? editor.store.shapes().some((shape) => shape.type === "image")
       : false);
 
   useEffect(() => {
@@ -77,7 +77,7 @@ export function WorkspaceShell() {
               </p>
             </div>
           ) : null}
-          <KeepersTldraw
+          <KeepersBoard
             onEditor={(next) => {
               setEditor(next);
               if (!next) return;
@@ -94,7 +94,7 @@ export function WorkspaceShell() {
             dockOpen={dockOpen}
             onToggleDock={() => setDockOpen((value) => !value)}
             onExport={async () => {
-              const file = await createTldrawCanvasPortSafe(editor);
+              const file = await exportCanvas(editor);
               if (!file) return;
               const a = document.createElement("a");
               a.href = file.href;
@@ -147,8 +147,8 @@ export function WorkspaceShell() {
   }
 }
 
-async function createTldrawCanvasPortSafe(editor: Editor | null) {
+async function exportCanvas(editor: Editor | null) {
   if (!editor) return null;
-  const { createTldrawCanvasPort } = await import("@/adapters/tldraw/canvas-port");
-  return createTldrawCanvasPort(() => editor).exportFrame();
+  const { createCanvasPort } = await import("@/adapters/quickdraw/canvas-port");
+  return createCanvasPort(() => editor).exportFrame();
 }

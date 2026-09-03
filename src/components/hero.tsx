@@ -94,7 +94,7 @@ export function Hero() {
             },
             {
               k: "Point",
-              d: "Circle, scribble, or note. The agent gets a photo handle and a mask — not tldraw JSON.",
+              d: "Circle, scribble, or note. The agent gets a photo handle and a mask — not canvas JSON.",
             },
             {
               k: "Create",

@@ -45,7 +45,6 @@ Open [http://localhost:3000](http://localhost:3000).
 | `UPLOADTHING_TOKEN` | No | Direct uploads for originals / derivatives |
 | `HF_TOKEN` | No | Hugging Face Inference Providers for pixel edits |
 | `HF_EDIT_MODEL` / `HF_EDIT_PROVIDER` | No | Override the instruct-edit model |
-| `TLDRAW_LICENSE_KEY` | No | Removes the tldraw watermark |
 | `NEXT_PUBLIC_ALLOW_DEMO_FALLBACK` | Defaults on | Labeled local preview when no HF token |
 
 The tray starts empty. Drop photos to upload them through UploadThing (or keep them locally if the token is missing). **Load demo** in the workspace fills the prepared July weekend collection for judges. Pixel edits without `HF_TOKEN` use a **labeled local preview**, not a silent fake model.
@@ -66,7 +65,7 @@ You should see `get_workspace_state`, `record_preference`, `get_spatial_intent`,
 ## Stack
 
 - Next.js App Router + React
-- tldraw canvas
+- Quickdraw canvas ([MIT infinite-canvas SDK](https://github.com/quickdrawjs/quickdraw))
 - WebMCP via `document.modelContext.registerTool` (`use-webmcp-tool`)
 - UploadThing for blobs
 - Hugging Face Inference Providers behind an `ImageProvider` interface
