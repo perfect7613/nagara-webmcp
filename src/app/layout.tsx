@@ -32,7 +32,20 @@ export const metadata: Metadata = {
   openGraph: {
     title: `${PRODUCT_NAME}: Bengaluru civic voices`,
     description: PRODUCT_PROMISE,
-    images: ["/media/bengaluru-city.jpg"],
+    images: [
+      {
+        url: "/media/nagara-devpost-thumbnail.png",
+        width: 1254,
+        height: 1254,
+        alt: "Nagara civic map and WebMCP agent network",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `${PRODUCT_NAME}: Bengaluru civic voices`,
+    description: PRODUCT_PROMISE,
+    images: ["/media/nagara-devpost-thumbnail.png"],
   },
 };
 

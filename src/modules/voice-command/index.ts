@@ -62,6 +62,7 @@ export interface VoiceCommands {
   getState: () => CityState;
   getSnapshot: () => CitySnapshot;
   setDraft: (patch: Partial<VoiceDraft>) => CommandResult;
+  clearDraft: () => CommandResult;
   resolveWard: (input: { areaName?: string; lng?: number; lat?: number }) => CommandResult;
   classifyDraft: (caption?: string) => CommandResult;
   logActivity: (entry: { tool: string; summary: string; actor?: Actor }) => CommandResult;
@@ -137,6 +138,15 @@ export function createVoiceCommands(
         "Form updated.",
         ["draft"],
         { draft: { ...state.draft, ...cleaned } },
+      );
+    },
+    clearDraft() {
+      const state = getState();
+      return commit(
+        { ...state, draft: emptyDraft() },
+        "Filing form cleared.",
+        ["draft"],
+        { draft: emptyDraft() },
       );
     },
     resolveWard(input) {

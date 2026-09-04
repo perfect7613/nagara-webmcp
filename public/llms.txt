@@ -8,16 +8,17 @@ This origin registers WebMCP tools. Use them. Do not guess at buttons.
 ## File a voice from a photo and an area name
 
 1. Open /create
-2. get_workspace_state
-3. If you have a public image URL, attach_photo { "photoUrl": "https://..." }
-4. set_draft { "areaName": "HSR Layout", "title": "...", "body": "..." }
-5. classify_issue { "caption": "stormwater overflow into houses after rain" }
-6. resolve_ward { "areaName": "HSR Layout" }
-7. file_voice (photoUrl and areaName can be omitted if the form already has them)
-8. The new pin is selected. Call list_related_tenders if you need the public records.
+2. list_ui_actions
+3. get_workspace_state
+4. If you have a public image URL, attach_photo { "photoUrl": "https://..." }
+5. set_draft { "areaName": "HSR Layout", "title": "...", "body": "..." }
+6. classify_issue { "caption": "stormwater overflow into houses after rain" }
+7. resolve_ward { "areaName": "HSR Layout" }
+8. file_voice (photoUrl and areaName can be omitted if the form already has them)
+9. The new pin is selected. Call list_related_tenders if you need the public records.
 
 Do not file potholes or garbage as the lead issue. Prefer flooding, water, lakes, or unfinished works.
 
 ## Tools
 
-get_workspace_state, attach_photo, set_draft, classify_issue, resolve_ward, file_voice, list_voices, get_voice, focus_voice, support_voice, list_related_tenders, refresh_tenders, enrich_source
+list_ui_actions, navigate_app, get_workspace_state, attach_photo, set_draft, select_category, clear_draft, classify_issue, resolve_ward, use_current_location, file_voice, list_voices, get_voice, focus_voice, support_voice, list_related_tenders, get_link_target, refresh_tenders, enrich_source

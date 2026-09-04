@@ -32,7 +32,9 @@ export function CreateMap() {
   const selected = state.voices.find((voice) => voice.id === state.selectedVoiceId) ?? null;
   const tenders = useMemo(() => {
     if (!selected) return [];
-    const related = listRelatedTenders({ category: selected.category, areaName: selected.areaName });
+    const related = tenderSource
+      ? listRelatedTenders({ category: selected.category, areaName: selected.areaName })
+      : [];
     const byRef = new Map(selected.tenders.map((row) => [row.refNo, row]));
     for (const row of related) byRef.set(row.refNo, row);
     return [...byRef.values()];
@@ -211,6 +213,17 @@ export function CreateMap() {
         </div>
         <button className="btn-solid" type="submit" disabled={isUploading} style={{ width: "100%" }}>
           Put it on record
+        </button>
+        <button
+          className="btn-quiet"
+          type="button"
+          onClick={() => {
+            commands.clearDraft();
+            setStatus("Filing form cleared.");
+          }}
+          style={{ width: "100%", marginTop: 8 }}
+        >
+          Clear form
         </button>
         {status ? <p className="muted">{status}</p> : null}
         {state.activity.length > 0 ? (

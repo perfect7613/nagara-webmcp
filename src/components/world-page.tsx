@@ -130,7 +130,14 @@ export function WorldPage() {
           locality. The agent fills the form with set_draft, files with file_voice, and the pin shows up while you watch.
         </p>
         <pre className="prompt-box">{CODEX_PROMPT}</pre>
-        <p className="muted">Tools on this origin: get_workspace_state, attach_photo, set_draft, classify_issue, resolve_ward, file_voice, focus_voice, list_related_tenders, enrich_source.</p>
+        <p className="muted">
+          Start with list_ui_actions. Every meaningful link, button, field, category chip, map pin, location action,
+          filing action, community action, and public-record link has a semantic WebMCP mapping.
+        </p>
+        <div className="agent-proof">
+          <b>19 WebMCP tools</b>
+          <span>UI-complete · lifecycle managed · structured results · visible state changes</span>
+        </div>
       </section>
 
       <section className="section section-dark">

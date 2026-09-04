@@ -18,26 +18,42 @@ What that unlocks:
 
 ## How WebMCP is implemented
 
-Tools register on this origin with `use-webmcp-tool` (`document.modelContext.registerTool` under the hood). They are available on `/`, `/world`, and `/create`.
+Nineteen tools register on this origin with `use-webmcp-tool` (`document.modelContext.registerTool` under the hood). They are lifecycle-managed and available on `/`, `/world`, and `/create`. Start with `list_ui_actions`: it returns the current route and the semantic tool mapping for every meaningful visible control, so an agent never has to infer the interface from the DOM.
 
 | Tool | What it does |
 |---|---|
+| `list_ui_actions` | Discover every visible link, button, field, map action, and its semantic tool mapping |
+| `navigate_app` | Open the home, overview, map, How it works, agent guide, or latest voice |
 | `get_workspace_state` | Voice counts, selected pin, current form |
 | `attach_photo` | Host a public image URL with UploadThing and put it on the form |
 | `set_draft` | Fill the form the human can see |
+| `select_category` / `clear_draft` | Press a category chip or clear the visible form |
+| `use_current_location` | Mirror the location button, update coordinates, and resolve the GBA ward |
 | `classify_issue` | Flooding / water / lakes / works from a caption |
 | `resolve_ward` | Area name or coordinates to a GBA ward |
 | `file_voice` | Pin the voice and select it |
 | `focus_voice` / `support_voice` | Pan the map or join an existing pin |
+| `get_link_target` | Resolve the visible repo, live-app, or selected public-record link |
 | `list_related_tenders` / `refresh_tenders` / `enrich_source` | Public records via bundled OpenCity sources and live Firecrawl |
 
 Agent instructions also live at `/llms.txt`.
 
 ## Codex prompt
 
-Open https://nagara-webmcp.vercel.app/create. I took a photo of a civic failure in Bengaluru. Use the page's WebMCP tools: get_workspace_state, attach_photo or set_draft with the photo, set the area name, classify_issue, resolve_ward, then file_voice. The pin should appear on the map.
+Open https://nagara-webmcp.vercel.app/create. Call list_ui_actions, then get_workspace_state. I took a photo of a civic failure in Bengaluru. Use attach_photo or set_draft with the photo, set the area name, classify_issue, resolve_ward, then file_voice. The visible form should fill and the pin should appear on the map.
 
 Judges: ChatGPT in-app browser, or Chrome 149+ with `chrome://flags/#enable-webmcp-testing`.
+
+### Judge verification
+
+1. Open the live `/create` URL in ChatGPT's in-app browser.
+2. Confirm the page says **WebMCP ready**.
+3. Call `list_ui_actions`; it should report the 10 meaningful interaction groups on the map page.
+4. Call `set_draft` with `areaName`, `title`, `body`, and a public `photoUrl`; watch the visible form update.
+5. Call `select_category`, `resolve_ward`, and `file_voice`; watch the category chip, result status, map pin, selected voice, timeline, and related records update.
+6. Call `focus_voice` or `support_voice` to verify the agent and person continue from the same shared state.
+
+Read [`WEBMCP-COVERAGE.md`](./WEBMCP-COVERAGE.md) for the complete UI-to-tool matrix and implementation notes.
 
 ## Run locally
 

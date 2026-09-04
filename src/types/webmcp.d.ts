@@ -3,6 +3,7 @@ export {};
 declare global {
   interface ModelContextTool {
     name: string;
+    title?: string;
     description: string;
     inputSchema?: Record<string, unknown>;
     annotations?: Record<string, unknown>;

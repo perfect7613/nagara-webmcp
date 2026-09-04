@@ -5,4 +5,4 @@ export const PRODUCT_PROMISE =
 export const PRODUCT_CITY = "Bengaluru";
 export const GITHUB_REPO = "https://github.com/perfect7613/nagara-webmcp";
 export const LIVE_URL = "https://nagara-webmcp.vercel.app";
-export const CODEX_PROMPT = `Open ${LIVE_URL}/create. I took a photo of a civic failure in Bengaluru. Use the page's WebMCP tools: get_workspace_state, attach_photo or set_draft with the photo, set the area name, classify_issue, resolve_ward, then file_voice. The pin should appear on the map.`;
+export const CODEX_PROMPT = `Open ${LIVE_URL}/create. Call list_ui_actions, then get_workspace_state. I took a photo of a civic failure in Bengaluru. Use attach_photo or set_draft with the photo, set the area name, classify_issue, resolve_ward, then file_voice. The visible form should fill and the pin should appear on the map.`;

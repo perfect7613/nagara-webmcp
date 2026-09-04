@@ -3,6 +3,7 @@ import { classifyIssue } from "@/modules/classify-issue";
 import { listRelatedTenders } from "@/modules/tenders";
 import { fromAreaName, fromPoint } from "@/modules/ward-lookup";
 import { createVoiceCommands, emptyCity } from "@/modules/voice-command";
+import { executeTool, TOOL_CATALOG } from "@/modules/webmcp-registry";
 
 describe("classifyIssue", () => {
   it("maps flood captions to flooding", () => {
@@ -76,5 +77,55 @@ describe("tenders", () => {
     const rows = listRelatedTenders({ category: "flooding", areaName: "HSR" });
     expect(rows.length).toBeGreaterThan(0);
     expect(rows[0]?.refNo).toBeTruthy();
+  });
+});
+
+describe("WebMCP interaction coverage", () => {
+  it("publishes a semantic mapping for every visible map interaction", async () => {
+    let state = emptyCity();
+    const commands = createVoiceCommands(
+      () => state,
+      (next) => {
+        state = next;
+      },
+    );
+    const result = await executeTool("list_ui_actions", {}, commands, {
+      pathname: "/create",
+      navigate: () => {},
+      locate: async () => ({ lng: 77.6765, lat: 12.9255 }),
+    });
+    const actions = result.data?.actions as unknown[];
+    expect(result.ok).toBe(true);
+    expect(actions).toHaveLength(10);
+    expect(actions.map((action) => JSON.stringify(action)).join(" ")).toContain("Put it on record");
+    expect(actions.map((action) => JSON.stringify(action)).join(" ")).toContain("Clear form");
+  });
+
+  it("exposes navigation, category chips, geolocation, and clear-form actions", async () => {
+    let state = emptyCity();
+    let navigatedTo = "";
+    const commands = createVoiceCommands(
+      () => state,
+      (next) => {
+        state = next;
+      },
+    );
+    const environment = {
+      pathname: "/create",
+      navigate: (href: string) => {
+        navigatedTo = href;
+      },
+      locate: async () => ({ lng: 77.6765, lat: 12.9255 }),
+    };
+
+    expect(TOOL_CATALOG).toHaveLength(19);
+    expect((await executeTool("select_category", { category: "lakes" }, commands, environment)).ok).toBe(true);
+    expect(state.draft.category).toBe("lakes");
+    expect((await executeTool("use_current_location", {}, commands, environment)).ok).toBe(true);
+    expect(state.draft.lng).toBe(77.6765);
+    expect((await executeTool("navigate_app", { destination: "overview" }, commands, environment)).ok).toBe(true);
+    expect(navigatedTo).toBe("/world");
+    expect((await executeTool("clear_draft", {}, commands, environment)).ok).toBe(true);
+    expect(state.draft.category).toBeNull();
   });
 });
