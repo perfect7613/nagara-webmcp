@@ -84,10 +84,17 @@ https://drive.google.com/drive/folders/1d6CDT6Ks_Jx9Z-tvACH4L2WMHQ-2cQPj?usp=sha
 
 ## Screenshot Shot List
 
-1. `/world` showing the product story, WebMCP-ready state, prompt, and 19-tool proof panel
-2. `/create` after `set_draft` and `select_category`, with the visible form filled by the agent
-3. `/create` immediately after `file_voice`, showing the new selected pin, GBA ward, timeline, and related records
-4. Codex in-app browser tool list showing titles, schemas, and annotations
+### Bengaluru landing experience
+
+![Nagara landing experience](https://nagara-webmcp.vercel.app/media/devpost/nagara-home.png)
+
+### Shared civic overview
+
+![Nagara shared Bengaluru civic overview](https://nagara-webmcp.vercel.app/media/devpost/nagara-world.png)
+
+### Filing workspace, live map, and public records
+
+![Nagara filing workspace with map and public records](https://nagara-webmcp.vercel.app/media/devpost/nagara-create.png)
 
 ## Submission Readiness Notes
 
